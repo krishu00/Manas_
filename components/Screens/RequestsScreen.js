@@ -1,5 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -13,51 +18,72 @@ const Tab = createMaterialTopTabNavigator();
 const RequestScreen = () => {
   const [requestType, setRequestType] = useState('All Requests');
   const [requestStatus, setRequestStatus] = useState('All status');
+  const [myRequestsRefresh, setMyRequestsRefresh] = useState(false);
+  const [approvalsRefresh, setApprovalsRefresh] = useState(false);
+  const [activeTab, setActiveTab] = useState('My Requests');
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  const handleFilterChange = (type, status) => {
-    setRequestType(type);
-    setRequestStatus(status);
+  const triggerMyRequestsRefresh = () => setMyRequestsRefresh(prev => !prev);
+  const triggerApprovalsRefresh = () => setApprovalsRefresh(prev => !prev);
+
+  const handleOutsidePress = () => {
+    if (showDropdown) {
+      setShowDropdown(false);
+      Keyboard.dismiss(); // optional
+    }
   };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
-        <View style={styles.container}>
-          <Tab.Navigator
-            screenOptions={{
-              tabBarLabelStyle: { fontSize: 16, fontWeight: 'bold' },
-              tabBarStyle: { backgroundColor: '#f5f5f5' },
-              tabBarIndicatorStyle: { backgroundColor: '#6a9689' },
-            }}
-          >
-            <Tab.Screen name="Approvals">
-              {() => (
-                <Approvals
-                  requestType={requestType}
-                  requestStatus={requestStatus}
-                />
-              )}
-            </Tab.Screen>
-            <Tab.Screen name="My Requests">
-              {() => (
-                <MyRequests
-                  requestType={requestType}
-                  requestStatus={requestStatus}
-                />
-              )}
-            </Tab.Screen>
-          </Tab.Navigator>
-
-          <View style={styles.filterOverlay}>
-            {/* <FilterOptions onFilterChange={handleFilterChange} /> */}
-            <FilterOptions
-              onFilterSelect={selected => {
-                // You can do more complex logic if needed
-                console.log('User selected:', selected);
+        <TouchableWithoutFeedback onPress={handleOutsidePress}>
+          <View style={styles.container}>
+            <Tab.Navigator
+              screenOptions={{
+                tabBarLabelStyle: { fontSize: 16, fontWeight: 'bold' },
+                tabBarStyle: { backgroundColor: '#f5f5f5' },
+                tabBarIndicatorStyle: { backgroundColor: '#6a9689' },
               }}
-            />
+            >
+              <Tab.Screen
+                name="My Requests"
+                listeners={{ focus: () => setActiveTab('My Requests') }}
+              >
+                {() => (
+                  <MyRequests
+                    requestType={requestType}
+                    requestStatus={requestStatus}
+                    refreshFlag={myRequestsRefresh}
+                  />
+                )}
+              </Tab.Screen>
+
+              <Tab.Screen
+                name="Approvals"
+                listeners={{ focus: () => setActiveTab('Approvals') }}
+              >
+                {() => (
+                  <Approvals
+                    requestType={requestType}
+                    requestStatus={requestStatus}
+                    refreshFlag={approvalsRefresh}
+                  />
+                )}
+              </Tab.Screen>
+            </Tab.Navigator>
+
+            {/* FilterOptions visible only on My Requests tab */}
+            {activeTab === 'My Requests' && (
+              <View style={styles.filterOverlay} pointerEvents="box-none">
+                <FilterOptions
+                  onRefresh={triggerMyRequestsRefresh}
+                  showDropdown={showDropdown}
+                  setShowDropdown={setShowDropdown}
+                />
+              </View>
+            )}
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );

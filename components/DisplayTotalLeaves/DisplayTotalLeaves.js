@@ -1,20 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-} from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import { capitalizeWords } from '../../src/utils/utils';
-const DisplayTotalLeaves = () => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
+
+const DisplayTotalLeaves = ({refreshFlag}) => {
   const [leaveDetails, setLeaveDetails] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const toggleModal = () => setIsModalVisible(!isModalVisible);
 
   useEffect(() => {
     const fetchLeaveBalance = async () => {
@@ -34,7 +25,7 @@ const DisplayTotalLeaves = () => {
     };
 
     fetchLeaveBalance();
-  }, []);
+  }, [refreshFlag]);
 
   const totalBalance = leaveDetails.reduce(
     (sum, leave) => sum + (leave.closingBalance || 0),
@@ -43,47 +34,27 @@ const DisplayTotalLeaves = () => {
 
   return (
     <View style={styles.container}>
-      {/* Main Touchable Summary */}
-      <TouchableOpacity style={styles.section} onPress={toggleModal}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Leaves</Text>
         <Text style={styles.sectionValue}>{totalBalance}</Text>
-        <Text style={styles.sectionDetails}>Tap to view details</Text>
-      </TouchableOpacity>
 
-      {/* Modal */}
-      <Modal
-        transparent={true}
-        visible={isModalVisible}
-        animationType="slide"
-        onRequestClose={toggleModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#6a9689" />
-            ) : (
-              <>
-                {leaveDetails.map((leave, index) => (
-                  <View key={index} style={styles.leaveBox}>
-                    <Text style={styles.leaveTitle}>
-                      {capitalizeWords(leave.leaveTypeName || 'N/A')}
-                    </Text>
-                    <Text style={styles.leaveValue}>
-                      {leave.closingBalance ?? 0}
-                    </Text>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  style={styles.punchButton}
-                  onPress={toggleModal}
-                >
-                  <Text style={styles.buttonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+        {loading ? (
+          <ActivityIndicator size="large" color="#6a9689" />
+        ) : (
+          <>
+            {leaveDetails.map((leave, index) => (
+              <View key={index} style={styles.leaveRow}>
+                <Text style={styles.leaveType}>
+                  {capitalizeWords(leave.leaveTypeName || 'N/A', ':') + ':'}
+                </Text>
+                <Text style={styles.leaveValue}>
+                  {leave.closingBalance ?? 0}
+                </Text>
+              </View>
+            ))}
+          </>
+        )}
+      </View>
     </View>
   );
 };
@@ -91,83 +62,36 @@ const DisplayTotalLeaves = () => {
 export default DisplayTotalLeaves;
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  section: {
-    alignItems: 'center',
-    width: '100%',
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1f4062',
     marginBottom: 10,
+    textAlign: 'center',
   },
   sectionValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#6a9689', // Light green color for the number
+    color: '#6a9689',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  leaveRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  leaveType: {
+    fontSize: 14,
+    color: '#6a9689',
+  },
+  leaveValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6a9689',
   },
   sectionDetails: {
     fontSize: 14,
     color: '#6a9689',
-    textAlign: 'center',
-  },
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '70%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  punchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#a8d7c5',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  leaveBox: {
-    display: 'flex',
-    flexDirection: 'row',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 16,
-    marginBottom: 10,
-    borderRadius: 10,
-  },
-  leaveTitle: {
-    width: '50%',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#1f4062',
-  },
-  leaveValue: {
-    width: '50%',
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6a9689',
-    textAlign: 'center',
-  },
+ },
 });

@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 
-const Popup = ({ title, message, onClose }) => {
+const Popup = ({ title, message, onClose, autoClose = true }) => {
+  useEffect(() => {
+    if (autoClose) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+
+      return () => clearTimeout(timer); // cleanup
+    }
+  }, [autoClose, onClose]);
+
   return (
     <Modal transparent animationType="fade">
       <View style={styles.overlay}>
@@ -35,14 +45,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     marginBottom: 10,
+    color: '#100e0eff',
   },
   message: {
+    color: '#100e0eff',
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#4caf4fad',
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 8,

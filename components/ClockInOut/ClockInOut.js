@@ -7,7 +7,6 @@ import {
   View,
   Dimensions,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import dayjs from 'dayjs';
@@ -105,7 +104,6 @@ export default class ClockInOut extends React.Component {
     this.state.hourDegree.setValue((hours / 12) * 360 + (minutes / 60) * 30);
   };
 
-  // requestLocationPermission = async () => true;
   requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -126,7 +124,7 @@ export default class ClockInOut extends React.Component {
         return false;
       }
     } else {
-      return true; // iOS location permissions should be handled via Info.plist
+      return true;
     }
   };
 
@@ -142,7 +140,6 @@ export default class ClockInOut extends React.Component {
         },
         error => {
           console.error('Error getting location:', error);
-          // Alert.alert('Error', 'Unable to get your location');
           this.showPopup('Error', 'Unable to get your location');
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
@@ -150,72 +147,46 @@ export default class ClockInOut extends React.Component {
     }
   };
 
-  // checkPunchStatus = async date => {
-  //   try {
-  //     const response = await apiMiddleware.get(
-  //       `/attendance/daily_attendance?date=${date}`,
-  //     );
-
-  //     // console.log('check status ', response);
-
-  //     const { punch_in_time, punch_out_time } = response.data?.[0] || {};
-
-  //     if (punch_in_time) {
-  //       const punchInTime = dayjs(punch_in_time);
-  //       const now = dayjs();
-  //       const elapsedSeconds = now.diff(punchInTime, 'second');
-
-  //       this.setState({
-  //         punchInTime: punchInTime.format('hh:mm A'),
-  //         isPunchedIn: true,
-  //         elapsedSeconds,
-  //         buttonLabel: punch_out_time ? 'Done for the day' : 'Clock Out',
-  //         punchOutTime: punch_out_time
-  //           ? dayjs(punch_out_time).format('hh:mm A')
-  //           : null,
-  //         isDoneForDay: !!punch_out_time,
-  //       });
-  //     } else {
-  //       this.resetPunchState();
-  //     }
-  //   } catch (error) {
-  //     console.error('Error while checking punch-in status:', error);
-  //     this.resetPunchState();
-  //   }
-  // };
   checkPunchStatus = async date => {
     try {
       const response = await apiMiddleware.get(
         `/attendance/daily_attendance?date=${date}`,
       );
-      console.log('date ', date);
-
       const { punch_in_time, punch_out_time } = response.data?.[0] || {};
-      console.log('punch_in_time', punch_in_time);
-      console.log('punch_out_time', punch_out_time);
-      console.log('response ', response);
 
       if (punch_in_time) {
-        const punchInTime = dayjs(punch_in_time);
+        const punchIn = dayjs(punch_in_time);
         const now = dayjs();
-        const elapsedSeconds = now.diff(punchInTime, 'second');
+        const elapsedSeconds = punch_out_time
+          ? dayjs(punch_out_time).diff(punchIn, 'second')
+          : now.diff(punchIn, 'second');
 
         this.setState({
-          punchInTime: punchInTime.format('hh:mm A'),
-          isPunchedIn: true,
-          elapsedSeconds,
+          punchInTime: punchIn.format('hh:mm A'),
           punchOutTime: punch_out_time
             ? dayjs(punch_out_time).format('hh:mm A')
             : null,
-          isDoneForDay: false, // Allow further punch-outs
-          buttonLabel: 'Clock Out',
+          isPunchedIn: !punch_out_time,
+          elapsedSeconds,
+          isDoneForDay: false,
+          buttonLabel: !punch_out_time ? 'Punch Out' : 'Punch Out Again',
+          nextAction: !punch_out_time ? 'punchOut' : 'punchOut',
         });
       } else {
+        // 👇 Default to punchIn if no record exists
         this.resetPunchState();
+        this.setState({
+          nextAction: 'punchIn',
+          buttonLabel: 'Punch In',
+        });
       }
     } catch (error) {
       console.error('Error while checking punch-in status:', error);
       this.resetPunchState();
+      this.setState({
+        nextAction: 'punchIn',
+        buttonLabel: 'Punch In',
+      });
     }
   };
 
@@ -231,41 +202,26 @@ export default class ClockInOut extends React.Component {
 
   punchIn = async (latitude, longitude) => {
     try {
+      console.log('asdjkbfajdbs');
+
       this.setState({ loading: true });
 
-      const employeeId = storage.getString('employee_id');
-      const companyCode = storage.getString('companyCode');
-
-      if (!employeeId || !companyCode) throw new Error('Missing credentials');
-
-      // Use `apiMiddleware.post` to make the API call
-      const response = await apiMiddleware.post(
-        '/attendance/punch_in',
-        { data: { latitude, longitude } },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie: `employee_id=${employeeId}; companyCode=${companyCode}`,
-          },
-        },
-      );
-      // console.log('punchin', response);
+      const response = await apiMiddleware.post('/attendance/punch_in', {
+        data: { latitude, longitude },
+      });
+      console.log('punchin ', response);
 
       if (response?.data?.success) {
         const punchInTime = dayjs(response.data.punchInTime || dayjs());
-        const now = dayjs();
-        const elapsedSeconds = now.diff(punchInTime, 'second');
 
         this.setState({
           punchInTime: punchInTime.format('hh:mm A'),
           isPunchedIn: true,
-          elapsedSeconds,
+          elapsedSeconds: 0,
+          buttonLabel: 'Punch Out',
+          nextAction: 'punchOut',
         });
 
-        Alert.alert(
-          'Success',
-          response.data.message || 'Punched in successfully',
-        );
         this.showPopup(
           'Success',
           response.data.message || 'Punched in successfully',
@@ -273,12 +229,6 @@ export default class ClockInOut extends React.Component {
       }
     } catch (error) {
       this.handlePunchError(error);
-      handlePunchError = error => {
-        const errorMessage =
-          error.response?.data?.message || 'Punch action failed';
-        this.showPopup('Error', errorMessage);
-        console.error(errorMessage);
-      };
     } finally {
       this.setState({ loading: false });
     }
@@ -288,58 +238,29 @@ export default class ClockInOut extends React.Component {
     try {
       this.setState({ loading: true });
 
-      if (!this.state.isPunchedIn)
-        throw new Error('You need to punch in first');
-
-      const employeeId = storage.getString('employee_id');
-      const companyCode = storage.getString('companyCode');
-
-      if (!employeeId || !companyCode) throw new Error('Missing credentials');
-
-      // Use `apiMiddleware.put` instead of `axios.put`
-      const response = await apiMiddleware.put(
-        '/attendance/punch_out',
-        { data: { latitude, longitude } },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie: `employee_id=${employeeId}; companyCode=${companyCode}`,
-          },
-        },
-      );
-
-      const punchOutTimeRaw = response.data.punch_out_time;
-      const punchOutTime = dayjs(punchOutTimeRaw).isValid()
-        ? dayjs(punchOutTimeRaw)
-        : dayjs();
-      const punchInTimeRaw = response.data.punchInTime;
-      const punchInTime = dayjs(punchInTimeRaw || dayjs());
-
-      this.setState({
-        punchOutTime: punchOutTime.format('hh:mm A'),
-        isPunchedIn: false,
-        // isDoneForDay: true,
-        elapsedSeconds: 0,
+      const response = await apiMiddleware.put('/attendance/punch_out', {
+        data: { latitude, longitude },
       });
 
-      // Alert.alert(
-      //   'Success',
-      //   response.data.message || 'Punched out successfully',
-      // );
+      const punchOutTime = response.data.punch_out_time
+        ? dayjs(response.data.punch_out_time)
+        : dayjs();
+      this.setState(prev => ({
+        punchOutTime: punchOutTime.format('hh:mm A'),
+        isPunchedIn: false,
+        isDoneForDay: false,
+        elapsedSeconds: prev.elapsedSeconds,
+        buttonLabel: 'Punch Out Again',
+        nextAction: 'punchOut',
+      }));
+      console.log(' response.data.message ', response.data.message);
 
       this.showPopup(
         'Success',
-        response.data.message || 'Punched Out successfully',
+        response.data.message || 'Punched out successfully',
       );
     } catch (error) {
-      console.error('Error during punch-out:', error);
-      // this.handlePunchError(error);
-      handlePunchError = error => {
-        const errorMessage =
-          error.response?.data?.message || 'Punch action failed';
-        this.showPopup('Error', errorMessage);
-        console.error(errorMessage);
-      };
+      this.handlePunchError(error);
     } finally {
       this.setState({ loading: false });
     }
@@ -347,9 +268,7 @@ export default class ClockInOut extends React.Component {
 
   handlePunchError = error => {
     const errorMessage = error.response?.data?.message || 'Punch action failed';
-    // Alert.alert('Error', errorMessage);
     this.showPopup('Error', errorMessage);
-
     console.error(errorMessage);
   };
 
@@ -474,7 +393,7 @@ export default class ClockInOut extends React.Component {
                   {isPunchedIn ? 'Punch Out' : 'Punch In'}
                 </Text>
               </TouchableOpacity> */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={styles.punchButton}
                   onPress={() => {
                     if (!isPunchedIn && !punchInTime) {
@@ -497,6 +416,35 @@ export default class ClockInOut extends React.Component {
                     ]}
                   >
                     {isPunchedIn ? 'Punch Out Again' : 'Punch In'}
+                  </Text>
+                </TouchableOpacity> */}
+                <TouchableOpacity
+                  style={styles.punchButton}
+                  onPress={() =>
+                    this.getLocationAndPunchInOrOut(this.state.nextAction)
+                  }
+                >
+                  <Icon
+                    name={
+                      this.state.nextAction === 'punchOut'
+                        ? 'sign-out'
+                        : 'sign-in'
+                    }
+                    size={20}
+                    color={
+                      this.state.nextAction === 'punchOut' ? '#F7454A' : '#fff'
+                    }
+                    style={styles.iconStyle}
+                  />
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      this.state.nextAction === 'punchOut'
+                        ? styles.punchInText
+                        : styles.punchOutText,
+                    ]}
+                  >
+                    {this.state.buttonLabel}
                   </Text>
                 </TouchableOpacity>
               </>

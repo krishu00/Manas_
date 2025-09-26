@@ -1,39 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   Button,
-  Alert,
   StyleSheet,
   ScrollView,
 } from 'react-native';
 import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
-// import { useAuth } from '../../context/AuthContext'; // Adjust as needed
+import Popup from '../../Popup/Popup';
 
-const RepairOfAsset = ({ navigation }) => {
+const RepairOfAsset = ({ navigation, onSuccess }) => {
   const [formData, setFormData] = useState({
     selectedAsset: '',
     issueDescription: '',
   });
 
-  const [loading, setLoading] = useState(false); // ✅ Moved inside component
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupContent, setPopupContent] = useState({ title: '', message: '' });
+  const onPopupCloseCallbackRef = useRef(null);
+
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const showPopup = (title, message, onCloseCallback) => {
+    setPopupContent({ title, message });
+    setPopupVisible(true);
+    if (onCloseCallback) {
+      onPopupCloseCallbackRef.current = onCloseCallback;
+    }
+  };
+
+  const handlePopupClose = () => {
+    setPopupVisible(false);
+    if (onPopupCloseCallbackRef.current) {
+      onPopupCloseCallbackRef.current();
+      onPopupCloseCallbackRef.current = null;
+    }
+  };
+
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+
     const { selectedAsset, issueDescription } = formData;
 
     if (!selectedAsset || !issueDescription) {
-      Alert.alert('Validation Error', 'Please fill in all fields.');
+      showPopup('Validation Error', 'Please fill in all fields.');
+      setSubmitting(false);
       return;
     }
-
-    if (loading) return;
-
-    setLoading(true);
 
     const payload = {
       selected_asset: selectedAsset.trim(),
@@ -41,22 +60,30 @@ const RepairOfAsset = ({ navigation }) => {
     };
 
     try {
-      const response = await apiMiddleware.post('/request/repair_asset', payload);
+      const response = await apiMiddleware.post(
+        '/request/repair_asset',
+        payload,
+      );
 
       if (response?.status === 201 || response?.data?.success) {
-        Alert.alert('Success', 'Repair request submitted successfully!');
         setFormData({ selectedAsset: '', issueDescription: '' });
+        showPopup('Success', 'Repair request submitted successfully!', () => {
+          onSuccess?.();
+        });
       } else {
-        Alert.alert('Error', response?.data?.message || 'Submission failed.');
+        showPopup(
+          'Error',
+          response?.data?.message || 'Failed to submit request.',
+        );
       }
     } catch (error) {
       console.error('❌ Submit error:', error.response?.data || error.message);
-      Alert.alert(
+      showPopup(
         'Error',
         error.response?.data?.message || 'Something went wrong.',
       );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -82,12 +109,20 @@ const RepairOfAsset = ({ navigation }) => {
 
       <View style={styles.submitButton}>
         <Button
-          title={loading ? 'Submitting...' : 'Submit'}
+          title={submitting ? 'Submitting...' : 'Submit'}
           onPress={handleSubmit}
           color="#6a9689"
-          disabled={loading}
+          disabled={submitting}
         />
       </View>
+
+      {popupVisible && (
+        <Popup
+          title={popupContent.title}
+          message={popupContent.message}
+          onClose={handlePopupClose}
+        />
+      )}
     </ScrollView>
   );
 };
@@ -116,6 +151,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 15,
+    color: '#0e120ef0',
   },
   textArea: {
     height: 100,

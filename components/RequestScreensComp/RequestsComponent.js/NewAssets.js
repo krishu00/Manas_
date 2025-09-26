@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
-import Popup from '../../Popup/Popup'; // Import your Popup component
+import Popup from '../../Popup/Popup';
 
 const NewAssets = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -16,13 +16,11 @@ const NewAssets = ({ onSuccess }) => {
     reason: '',
   });
 
+  const [submitting, setSubmitting] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
-  const [popupContent, setPopupContent] = useState({
-    title: '',
-    message: '',
-  });
+  const [popupContent, setPopupContent] = useState({ title: '', message: '' });
 
-  const onPopupCloseCallbackRef = useRef(null); // ✅ fix: useRef instead of let
+  const onPopupCloseCallbackRef = useRef(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -45,10 +43,14 @@ const NewAssets = ({ onSuccess }) => {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+
     const { assetType, reason } = formData;
 
     if (!assetType || !reason) {
       showPopup('Validation Error', 'Please fill in all fields.');
+      setSubmitting(false);
       return;
     }
 
@@ -64,15 +66,24 @@ const NewAssets = ({ onSuccess }) => {
         setFormData({ assetType: '', reason: '' });
         showPopup('Success', 'Asset request submitted successfully!', () => {
           setTimeout(() => {
-            onSuccess?.(); // ✅ This will now correctly close the modal
+            onSuccess?.();
           }, 500);
         });
+        console.log('response new assets', response);
       } else {
-        showPopup('Error', response?.data?.message || 'Failed to submit request.');
+        showPopup(
+          'Error',
+          response?.data?.message || 'Failed to submit request.',
+        );
       }
     } catch (error) {
       console.error('❌ Submit error:', error.response?.data || error.message);
-      showPopup('Error', error.response?.data?.message || 'Something went wrong.');
+      showPopup(
+        'Error',
+        error.response?.data?.message || 'Something went wrong.',
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -98,7 +109,12 @@ const NewAssets = ({ onSuccess }) => {
         />
 
         <View style={styles.submitButton}>
-          <Button title="Submit" onPress={handleSubmit} color="#6a9689" />
+          <Button
+            title={submitting ? 'Submitting...' : 'Submit'}
+            onPress={handleSubmit}
+            color="#6a9689"
+            disabled={submitting}
+          />
         </View>
       </ScrollView>
 
@@ -112,6 +128,7 @@ const NewAssets = ({ onSuccess }) => {
     </>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -132,6 +149,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 15,
+    color: '#0e120ef0',
   },
   textArea: {
     height: 100,

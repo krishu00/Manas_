@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import moment from 'moment';
 
-const AttendanceDetails = () => {
+const AttendanceDetails = ({refreshFlag}) => {
   const [attendanceData, setAttendanceData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -14,7 +14,7 @@ const AttendanceDetails = () => {
     const fetchAttendance = async () => {
       try {
         const response = await apiMiddleware.get(
-          `/attendance/user_attendance_performance?month=${month}&year=${year}`
+          `/attendance/user_attendance_performance?month=${month}&year=${year}`,
         );
         if (response.data?.success) {
           setAttendanceData(response.data);
@@ -27,7 +27,7 @@ const AttendanceDetails = () => {
     };
 
     fetchAttendance();
-  }, []);
+  }, [refreshFlag]);
 
   if (loading) {
     return (
@@ -49,10 +49,14 @@ const AttendanceDetails = () => {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Attendance</Text>
-      <Text style={styles.sectionValue}>{attendanceData.totalWorkingDays} Days</Text>
+      <Text style={styles.sectionValue}>
+        {attendanceData.totalWorkingDays} Days
+      </Text>
       <Text style={styles.sectionDetails}>
-        Miss Punch: {attendanceData.missPunch}{'\n'}
-        On-Time: {attendanceData.onTimePercentage}%  {'\n'}  Late: {attendanceData.latePercentage}%
+        Miss Punch: {attendanceData.missPunch}
+        {'\n'}
+        On-Time: {attendanceData.onTimePercentage}% {'\n'} Late:{' '}
+        {attendanceData.latePercentage}%
       </Text>
     </View>
   );

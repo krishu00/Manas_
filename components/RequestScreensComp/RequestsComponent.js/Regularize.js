@@ -15,12 +15,25 @@ import { Calendar } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
 import { isNotNull } from '../../../src/utils/utils';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import Popup from '../../Popup/Popup';
 
-const Regularize = ({ onSubmit }) => {
+const Regularize = ({ onSubmit, onSuccess }) => {
   const [entries, setEntries] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Popup state
+  const [popup, setPopup] = useState({ visible: false, title: '', message: '' });
+  const showPopup = (title, message) => setPopup({ visible: true, title, message });
+  const closePopup = () => setPopup({ visible: false, title: '', message: '' });
+
+  // Time picker states
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [currentField, setCurrentField] = useState(null); // "inTime" or "outTime"
+  const [selectedEntryId, setSelectedEntryId] = useState(null);
 
   const getTimeColor = time => {
     const [h] = time.split(':').map(Number);
@@ -55,8 +68,6 @@ const Regularize = ({ onSubmit }) => {
         `/attendance/daily_working_hours?month=${month}&year=${year}`,
       );
       const { workingHoursPerDay } = response.data;
-      console.log('response ', response);
-      console.log('workingHoursPerDay', workingHoursPerDay);
 
       if (isNotNull(workingHoursPerDay)) {
         const formatted = workingHoursPerDay.reduce(
@@ -93,7 +104,6 @@ const Regularize = ({ onSubmit }) => {
         `/attendance/daily_attendance?date=${date}`,
       );
       const data = response.data?.[0];
-      console.log('data', data);
 
       if (data) {
         const alreadyExists = entries.some(e => e.date === date);
@@ -128,18 +138,12 @@ const Regularize = ({ onSubmit }) => {
     }
   };
 
-  //   const handleChange = (id, field, value) => {
-  //     setEntries(prev =>
-  //       prev.map(e => (e.id === id ? { ...e, [field]: value } : e)),
-  //     );
-  //   };
   const handleChange = (id, field, value) => {
     setEntries(prev =>
       prev.map(e => {
         if (e.id === id) {
           const updatedEntry = { ...e, [field]: value };
 
-          // Recalculate totalHours when inTime or outTime changes
           if (field === 'inTime' || field === 'outTime') {
             const { inTime, outTime } = updatedEntry;
             if (inTime && outTime) {
@@ -151,7 +155,6 @@ const Regularize = ({ onSubmit }) => {
               updatedEntry.totalHours = decimalHours;
             }
           }
-
           return updatedEntry;
         }
         return e;
@@ -159,142 +162,211 @@ const Regularize = ({ onSubmit }) => {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+
     const isValid = entries.every(
       e => e.date && e.inTime && e.outTime && e.reason,
     );
     if (!isValid) {
-      alert('Please fill all required fields.');
+      showPopup('Validation', 'Please fill all required fields.');
+      setSubmitting(false);
       return;
     }
-    onSubmit(entries);
+
+    try {
+      await onSubmit(entries);
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      }
+      showPopup('Success', 'Your regularization request has been submitted.');
+    } catch (error) {
+      console.error('❌ Submit error:', error);
+      showPopup('Error', 'Something went wrong while submitting.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const onDayPress = day => {
     fetchAttendanceData(day.dateString);
     setShowCalendar(false);
   };
+
   useEffect(() => {
     const today = new Date();
     fetchWorkingHours(today.getMonth() + 1, today.getFullYear());
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Pressable style={styles.addButton} onPress={() => setShowCalendar(true)}>
-        <Text style={styles.addText}>+ Add Date</Text>
-      </Pressable>
+    <>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Pressable style={styles.addButton} onPress={() => setShowCalendar(true)}>
+          <Text style={styles.addText}>+ Add Date</Text>
+        </Pressable>
 
-      {entries.map(entry => (
-        <View key={entry.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.dateText}>{entry.date}</Text>
-            <View style={styles.durationRow}>
-              <Ionicons name="time-outline" size={18} color="#555" />
-              <Text style={styles.durationText}>
-                {calculateHours(entry.inTime, entry.outTime) || '00:00'} hrs
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.timeRow}>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.label}>In Time *</Text>
-              <TextInput
-                placeholder="HH:MM"
-                style={styles.input}
-                value={entry.inTime}
-                onChangeText={val => handleChange(entry.id, 'inTime', val)}
-              />
+        {entries.map(entry => (
+          <View key={entry.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.dateText}>{entry.date}</Text>
+              <View style={styles.durationRow}>
+                <Ionicons name="time-outline" size={18} color="#555" />
+                <Text style={styles.durationText}>
+                  {calculateHours(entry.inTime, entry.outTime) || '00:00'} hrs
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Out Time *</Text>
-              <TextInput
-                placeholder="HH:MM"
-                style={styles.input}
-                value={entry.outTime}
-                onChangeText={val => handleChange(entry.id, 'outTime', val)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.reasonWrapper}>
-            <Text style={styles.label}>Select Reason *</Text>
-            <TextInput
-              placeholder="Enter reason"
-              style={styles.reasonInput}
-              value={entry.reason}
-              multiline
-              onChangeText={val => handleChange(entry.id, 'reason', val)}
-            />
-          </View>
-        </View>
-      ))}
-      {showCalendar && (
-        <View style={styles.calendarContainer}>
-          <Calendar
-            style={{ borderRadius: 10 }}
-            markingType={'custom'}
-            markedDates={markedDates}
-            onDayPress={onDayPress}
-            dayComponent={({ date }) => {
-              const marked = markedDates[date.dateString];
-              return (
+            <View style={styles.timeRow}>
+              {/* In Time Picker */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>In Time *</Text>
                 <TouchableOpacity
-                  onPress={() => onDayPress({ dateString: date.dateString })}
+                  style={styles.input}
+                  onPress={() => {
+                    setCurrentField('inTime');
+                    setSelectedEntryId(entry.id);
+                    setPickerVisible(true);
+                  }}
                 >
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: '#000' }}>{date.day}</Text>
-                    {marked?.time && (
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          color: getTimeColor(marked.time),
-                        }}
-                      >
-                        {marked.time}
-                      </Text>
-                    )}
-                  </View>
+                  <Text style={{ color: entry.inTime ? '#000' : '#888' }}>
+                    {entry.inTime || 'HH:MM'}
+                  </Text>
                 </TouchableOpacity>
-              );
-            }}
-            theme={{
-              backgroundColor: '#fff',
-              calendarBackground: '#fff',
-              todayTextColor: '#4a8f7b',
-              selectedDayBackgroundColor: '#4a8f7b',
-              selectedDayTextColor: '#fff',
-              arrowColor: '#4a8f7b',
-            }}
+              </View>
+
+              {/* Out Time Picker */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Out Time *</Text>
+                <TouchableOpacity
+                  style={styles.input}
+                  onPress={() => {
+                    setCurrentField('outTime');
+                    setSelectedEntryId(entry.id);
+                    setPickerVisible(true);
+                  }}
+                >
+                  <Text style={{ color: entry.outTime ? '#000' : '#888' }}>
+                    {entry.outTime || 'HH:MM'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.reasonWrapper}>
+              <Text style={styles.label}>Select Reason *</Text>
+              <TextInput
+                placeholder="Enter reason"
+                style={styles.reasonInput}
+                value={entry.reason}
+                multiline
+                onChangeText={val => handleChange(entry.id, 'reason', val)}
+              />
+            </View>
+          </View>
+        ))}
+
+        {/* Time Picker Modal */}
+        <DateTimePickerModal
+          isVisible={pickerVisible}
+          mode="time"
+          onConfirm={date => {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            if (selectedEntryId && currentField) {
+              handleChange(selectedEntryId, currentField, timeStr);
+            }
+            setPickerVisible(false);
+          }}
+          onCancel={() => setPickerVisible(false)}
+        />
+
+        {showCalendar && (
+          <View style={styles.calendarContainer}>
+            <Calendar
+              style={{ borderRadius: 10 }}
+              markingType={'custom'}
+              markedDates={markedDates}
+              onDayPress={onDayPress}
+              dayComponent={({ date }) => {
+                const marked = markedDates[date.dateString];
+                return (
+                  <TouchableOpacity
+                    onPress={() => onDayPress({ dateString: date.dateString })}
+                  >
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: '#000' }}>{date.day}</Text>
+                      {marked?.time && (
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            color: getTimeColor(marked.time),
+                          }}
+                        >
+                          {marked.time}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+              theme={{
+                backgroundColor: '#fff',
+                calendarBackground: '#fff',
+                todayTextColor: '#4a8f7b',
+                selectedDayBackgroundColor: '#4a8f7b',
+                selectedDayTextColor: '#fff',
+                arrowColor: '#4a8f7b',
+              }}
+            />
+
+            <Pressable
+              style={styles.cancelCalendarBtn}
+              onPress={() => setShowCalendar(false)}
+            >
+              <Text style={styles.cancelCalendarText}>Cancel</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {loading && (
+          <ActivityIndicator
+            size="large"
+            color="#4a8f7b"
+            style={{ marginTop: 20 }}
           />
+        )}
 
-          <Pressable
-            style={styles.cancelCalendarBtn}
-            onPress={() => setShowCalendar(false)}
-          >
-            <Text style={styles.cancelCalendarText}>Cancel</Text>
-          </Pressable>
-        </View>
-      )}
+        {entries.length > 0 && (
+          <View style={styles.footer}>
+            <Pressable
+              style={[
+                styles.submitButton,
+                submitting && { backgroundColor: '#ccc' },
+              ]}
+              onPress={handleSubmit}
+              disabled={submitting}
+            >
+              <Text style={styles.submitText}>
+                {submitting ? 'Submitting...' : 'Submit'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
 
-      {loading && (
-        <ActivityIndicator
-          size="large"
-          color="#4a8f7b"
-          style={{ marginTop: 20 }}
+      {/* 🔹 Popup */}
+      {popup.visible && (
+        <Popup
+          title={popup.title}
+          message={popup.message}
+          onClose={closePopup}
+          autoClose={true}
         />
       )}
-
-      {entries.length > 0 && (
-        <View style={styles.footer}>
-          <Pressable style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Submit</Text>
-          </Pressable>
-        </View>
-      )}
-    </ScrollView>
+    </>
   );
 };
 
@@ -380,6 +452,7 @@ const styles = StyleSheet.create({
     height: 70,
     textAlignVertical: 'top',
     backgroundColor: '#fff',
+    color: '#0e120ef0',
   },
   calendarContainer: {
     backgroundColor: '#fff',

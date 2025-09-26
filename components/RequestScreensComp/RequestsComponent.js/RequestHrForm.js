@@ -16,13 +16,13 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
     subject: '',
     reason: '',
   });
-  const [loading, setLoading] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupContent, setPopupContent] = useState({
     title: '',
     message: '',
   });
-
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const onPopupCloseCallbackRef = useRef(null);
 
   const handleInputChange = (field, value) => {
@@ -49,12 +49,14 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
   };
 
   const handleSubmit = async () => {
-    if (loading) return;
+    if (submitting) return;
+    setSubmitting(true);
 
     const { subject, reason } = requestHrData;
 
     if (!subject || !reason) {
       showPopup('Validation Error', 'Please fill all fields.');
+      setSubmitting(false);
       return;
     }
 
@@ -66,28 +68,31 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
 
     try {
       setLoading(true);
-      const response = await apiMiddleware.post('/request/request_to_hr', payload);
+      const response = await apiMiddleware.post(
+        '/request/request_to_hr',
+        payload,
+      );
       console.log('RESPONSE', response);
 
-      if (response.status === 200 || response.data?.success) {
+      if (response.status === 201 || response.data?.success) {
         setRequestHrData({ subject: '', reason: '' });
         showPopup('Success', 'Request to HR submitted successfully!', () => {
-          setTimeout(() => onSuccess?.(), 500);
+          setTimeout(() => {
+            onSuccess?.();
+          }, 300);
         });
       } else {
-        showPopup('Error', response.data?.message || 'Request failed.', () => {
-          setTimeout(() => onSuccess?.(), 500);
-        });
+        showPopup('Error', response.data?.message || 'Request failed.');
       }
     } catch (error) {
       console.error('❌ API Error:', error?.response || error.message);
       showPopup(
         'Error',
         error?.response?.data?.message || 'Something went wrong.',
-        () => setTimeout(() => onClose?.(), 500)
       );
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -118,7 +123,12 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
           {loading ? (
             <ActivityIndicator size="small" color="#6a9689" />
           ) : (
-            <Button title="Submit" onPress={handleSubmit} color="#6a9689" />
+            <Button
+              title={loading ? 'Submitting...' : 'Submit'}
+              onPress={handleSubmit}
+              color="#6a9689"
+              disabled={loading || submitting}
+            />
           )}
         </View>
       </ScrollView>
@@ -133,6 +143,7 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
     </>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -153,6 +164,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 15,
+    color: '#0e120ef0',
   },
   textArea: {
     height: 100,
@@ -166,4 +178,3 @@ const styles = StyleSheet.create({
 });
 
 export default RequestHrForm;
-

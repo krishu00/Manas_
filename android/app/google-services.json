@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "98581581110",
+    "project_id": "manas-hrms",
+    "storage_bucket": "manas-hrms.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98581581110:android:60b987f7aac2d19c817797",
+        "android_client_info": {
+          "package_name": "com.hrms_"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYyfm4mLbJ3lxuqhc7ckS41n7it0KwoAc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

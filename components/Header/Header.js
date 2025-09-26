@@ -1,41 +1,51 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   Image,
-  TouchableWithoutFeedback,   
-  Alert,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {MMKV} from 'react-native-mmkv';
-import {apiMiddleware} from '../../src/apiMiddleware/apiMiddleware';
+import { MMKV } from 'react-native-mmkv';
+import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
+import Popup from '../Popup/Popup';
 
 const storage = new MMKV();
 
-const Header = ({onLogoutSuccess}) => {
+const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
+  const [popup, setPopup] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   useEffect(() => {
     const controller = new AbortController();
     UserDetails(controller);
 
     return () => {
-      controller.abort(); // Clean up the fetch operation on unmount
+      controller.abort();
     };
   }, []);
 
+  const showPopup = (title, message) => {
+    setPopup({ visible: true, title, message });
+  };
+
   const handleLogout = async () => {
     try {
-      // Remove user token from MMKV
       storage.delete('userToken');
-      setDropdownVisible(false); // Close dropdown after logging out
-      onLogoutSuccess(); // Call the parent component function to update UI
+      setDropdownVisible(false);
+      onLogoutSuccess();
+      showPopup('Success', 'You have been logged out successfully.');
     } catch (error) {
       console.error('Logout error:', error);
+      showPopup('Error', 'Logout failed. Please try again.');
     }
   };
 
@@ -48,6 +58,18 @@ const Header = ({onLogoutSuccess}) => {
       setDropdownVisible(false);
     }
   };
+  // Close dropdown if parent signals
+  useEffect(() => {
+    if (closeDropdownFlag && dropdownVisible) {
+      setDropdownVisible(false);
+      closeDropdown(false); // reset flag
+    }
+  }, [closeDropdownFlag]);
+
+  // Call from outside to close dropdown
+  useEffect(() => {
+    if (!dropdownVisible && closeDropdown) closeDropdown(false);
+  }, [dropdownVisible]);
 
   const UserDetails = async controller => {
     try {
@@ -55,7 +77,7 @@ const Header = ({onLogoutSuccess}) => {
       const storedCompanyCode = storage.getString('companyCode');
 
       if (!storedEmployeeId || !storedCompanyCode) {
-        Alert.alert('Error', 'Unable to retrieve stored data');
+        showPopup('Error', 'Unable to retrieve stored data');
         return;
       }
 
@@ -72,18 +94,17 @@ const Header = ({onLogoutSuccess}) => {
         const employeeDetails = response.data.data.employee_details;
         const employeeId = response.data.data.employee_id;
 
-        // Update state with name and employee ID
         setName(employeeDetails.name);
         setEmployeeId(employeeId);
       } else {
-        Alert.alert(
+        showPopup(
           'Error',
           response.message || 'Failed to fetch employee details',
         );
       }
     } catch (error) {
       if (error.name !== 'CanceledError') {
-        Alert.alert('Error', 'Unable to find details');
+        showPopup('Error', 'Unable to find details');
         console.error('UserDetails error:', error);
       }
     }
@@ -94,11 +115,12 @@ const Header = ({onLogoutSuccess}) => {
       <View style={styles.container}>
         <LinearGradient
           colors={['#C1DFC4', '#DEECDD']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.headerContainer}>
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerContainer}
+        >
           <Image
-            source={require('../../src/logos/daksh-logo.png')}
+            source={require('../../src/logos/logo-HD.png')}
             style={styles.logo}
           />
 
@@ -112,13 +134,22 @@ const Header = ({onLogoutSuccess}) => {
               <View style={styles.dropdownContainer}>
                 <TouchableOpacity
                   onPress={handleLogout}
-                  style={styles.dropdownOption}>
+                  style={styles.dropdownOption}
+                >
                   <Text style={styles.dropdownText}>Logout</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         </LinearGradient>
+
+        {popup.visible && (
+          <Popup
+            title={popup.title}
+            message={popup.message}
+            onClose={() => setPopup({ ...popup, visible: false })}
+          />
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -136,7 +167,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   logo: {
-    width: 100,
+    width: 160,
     height: 50,
     resizeMode: 'contain',
   },
