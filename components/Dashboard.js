@@ -139,9 +139,9 @@ const Dashboard = ({ onLogoutSuccess }) => {
                 case 'Request':
                   iconName = 'envelope';
                   break;
-                // case 'More':
-                //   iconName = 'list';
-                //   break;
+                case 'More':
+                  iconName = 'list';
+                  break;
                 case 'UserProfile':
                   iconName = 'list';
                   break;
@@ -159,8 +159,15 @@ const Dashboard = ({ onLogoutSuccess }) => {
         >
           <Tab.Screen name="Home" component={HomeScreen} />
           {/* <Tab.Screen name="Feeds" component={FeedsScreen} /> */}
-          <Tab.Screen name="Request" component={RequestScreen} />
-          {/* <Tab.Screen name="More" component={MoreScreen} /> */}
+          <Tab.Screen
+            name="Request"
+            component={RequestScreen}
+            initialParams={{
+              selectedRequestId: null,
+              defaultTab: 'My Requests',
+            }} // fallback
+          />
+          <Tab.Screen name="More" component={MoreScreen} />
           <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
         </Tab.Navigator>
       </View>
