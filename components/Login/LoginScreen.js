@@ -18,7 +18,7 @@ import * as Keychain from 'react-native-keychain';
 
 const storage = new MMKV();
 
-const LoginScreen = ({ navigation, onLoginSuccess , fcmToken }) => {
+const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [controller, setController] = useState(null);
@@ -149,7 +149,7 @@ const LoginScreen = ({ navigation, onLoginSuccess , fcmToken }) => {
           email: email.trim(),
           password: password.trim(),
           platform: 'android',
-          fcmToken: fcmToken ,
+          fcmToken: fcmToken,
         },
         {
           headers: { 'Content-Type': 'application/json' },
@@ -159,16 +159,24 @@ const LoginScreen = ({ navigation, onLoginSuccess , fcmToken }) => {
 
       if (response?.data?.success) {
         const { employee, firstTimeLogin } = response.data;
+        const { token } = employee;
         if (firstTimeLogin) {
           navigation.replace('FirstTimeLogin');
           return;
         }
+        console.log('login details from login page ', employee);
 
         if (employee && employee.employee_id && employee.company_code) {
           storage.set('employee_id', employee.employee_id);
           storage.set('companyCode', employee.company_code);
-          storage.set('userToken', employee.employee_id);
           storage.set('loginTime', Date.now().toString());
+          // ✅ Save FCM token also
+          if (fcmToken) {
+            storage.set('fcmToken', fcmToken);
+          }
+          if (token) {
+            storage.set('userToken', token); // ✅ Now works
+          }
 
           // ✅ Save credentials securely if Remember Me checked
           if (rememberMe) {

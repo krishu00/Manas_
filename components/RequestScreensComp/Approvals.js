@@ -13,46 +13,72 @@ import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import RequestTemplate from '../RequestScreensComp/RequestTemplate';
 import Popup from '../Popup/Popup';
 
-const Approvals = ({ refreshFlag, setRefreshFlag, requestType, requestStatus }) => {
+const Approvals = ({
+  refreshFlag,
+  setRefreshFlag,
+  requestType,
+  requestStatus,
+  selectedRequestId,
+}) => {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [errorPopup, setErrorPopup] = useState(null);
   const [refreshing, setRefreshing] = useState(false); // ✅ pull-to-refresh state
 
-  const fetchApprovals = async () => {
-    setLoading(true);
-    try {
-      const response = await apiMiddleware.get('/request/get_requested_to_me');
-      let data = response.data?.data || [];
+ const fetchApprovals = async () => {
+  setLoading(true);
+  try {
+    const response = await apiMiddleware.get('/request/get_requested_to_me');
+    let data = response.data?.data || [];
 
-      // Apply filters
-      if (requestType && requestType !== 'All Requests') {
-        data = data.filter(item => item.request_type === requestType);
-      }
-      if (requestStatus && requestStatus !== 'All status') {
-        data = data.filter(item =>
-          requestStatus === 'Approved' ? item.completed_or_not : !item.completed_or_not,
-        );
-      }
-
-      setApprovals(data);
-    } catch (error) {
-      console.error('Error fetching approvals:', error);
-      setErrorPopup({
-        title: 'Error',
-        message: 'Failed to fetch approvals. Please try again.',
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false); // ✅ stop refresh loader
+    // Apply filters
+    if (requestType && requestType !== 'All Requests') {
+      data = data.filter(item => item.request_type === requestType);
     }
-  };
+    if (requestStatus && requestStatus !== 'All status') {
+      data = data.filter(item =>
+        requestStatus === 'Approved'
+          ? item.completed_or_not
+          : !item.completed_or_not,
+      );
+    }
+
+    setApprovals(data);
+
+    // 🔹 Open RequestTemplate if notification requestId exists
+    if (selectedRequestId) {
+      const req = data.find(r => r._id === selectedRequestId);
+      if (req) {
+        setSelectedRequest(req);
+      } else {
+        console.warn('Request not found in approvals:', selectedRequestId);
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching approvals:', error);
+    setErrorPopup({
+      title: 'Error',
+      message: 'Failed to fetch approvals. Please try again.',
+    });
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
 
   useEffect(() => {
     fetchApprovals();
     if (typeof setRefreshFlag === 'function') setRefreshFlag(false);
   }, [refreshFlag]);
+
+  // useEffect(() => {
+  //   if (selectedRequestId) {
+  //     const req = approvals.find(r => r._id === selectedRequestId);
+  //     if (req) setSelectedRequest(req);
+  //   }
+  // }, [approvals, selectedRequestId]);
 
   // Pull-to-refresh
   const onRefresh = useCallback(() => {
@@ -72,18 +98,38 @@ const Approvals = ({ refreshFlag, setRefreshFlag, requestType, requestStatus }) 
 
   const renderItem = ({ item, index }) => {
     const isEvenRow = index % 2 === 0;
-    const appliedDate = item.raised_on ? new Date(item.raised_on).toLocaleDateString() : 'N/A';
+    const appliedDate = item.raised_on
+      ? new Date(item.raised_on).toLocaleDateString()
+      : 'N/A';
 
     return (
       <TouchableOpacity onPress={() => setSelectedRequest(item)}>
-        <View style={[styles.row, { backgroundColor: isEvenRow ? '#ffffff' : '#f4f4f4' }]}>
+        <View
+          style={[
+            styles.row,
+            { backgroundColor: isEvenRow ? '#ffffff' : '#f4f4f4' },
+          ]}
+        >
           <Text style={[styles.cell, styles.sn]}>{index + 1}</Text>
-          <Text style={[styles.cell, styles.name]} numberOfLines={1}>{item.requestor_name}</Text>
-          <Text style={[styles.cell, styles.type, { color: '#d9534f' }]} numberOfLines={1}>
+          <Text style={[styles.cell, styles.name]} numberOfLines={1}>
+            {item.requestor_name}
+          </Text>
+          <Text
+            style={[styles.cell, styles.type, { color: '#d9534f' }]}
+            numberOfLines={1}
+          >
             {item.request_type}
           </Text>
-          <Text style={[styles.cell, styles.date]} numberOfLines={1}>{appliedDate}</Text>
-          <Text style={[styles.cell, styles.status, item.completed_or_not ? styles.approved : styles.pending]}>
+          <Text style={[styles.cell, styles.date]} numberOfLines={1}>
+            {appliedDate}
+          </Text>
+          <Text
+            style={[
+              styles.cell,
+              styles.status,
+              item.completed_or_not ? styles.approved : styles.pending,
+            ]}
+          >
             {item.completed_or_not ? 'Approved' : 'Pending'}
           </Text>
         </View>
@@ -141,10 +187,27 @@ const Approvals = ({ refreshFlag, setRefreshFlag, requestType, requestStatus }) 
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff', padding: 12 },
-  emptyText: { fontSize: 16, textAlign: 'center', marginTop: 20, color: '#888' },
-  row: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e1e1e1', paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center' },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#888',
+  },
+  row: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e1e1',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+  },
   headerRow: { backgroundColor: '#dbead7' },
-  cell: { fontSize: 12, paddingHorizontal: 4, textAlign: 'center', color: '#050505ff' },
+  cell: {
+    fontSize: 12,
+    paddingHorizontal: 4,
+    textAlign: 'center',
+    color: '#050505ff',
+  },
   sn: { width: 40, fontWeight: '500' },
   name: { width: 100, fontWeight: '500' },
   type: { width: 90, fontWeight: '500' },
