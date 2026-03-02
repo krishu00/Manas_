@@ -168,7 +168,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
 
         if (employee && employee.employee_id && employee.company_code) {
           storage.set('employee_id', employee.employee_id);
-          storage.set('companyCode', employee.company_code);
+          storage.set('company_Code', employee.company_code.toString());
           storage.set('loginTime', Date.now().toString());
           // ✅ Save FCM token also
           if (fcmToken) {

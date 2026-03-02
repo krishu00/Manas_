@@ -17,8 +17,9 @@ import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
 import { isNotNull } from '../../../src/utils/utils';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Popup from '../../Popup/Popup';
+import { Picker } from '@react-native-picker/picker';
 
-const Regularize = ({ onSubmit, onSuccess }) => {
+const CompOff = ({ onSubmit, onSuccess }) => {
   const [entries, setEntries] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ const Regularize = ({ onSubmit, onSuccess }) => {
   const [popup, setPopup] = useState({ visible: false, title: '', message: '' });
   const showPopup = (title, message) => setPopup({ visible: true, title, message });
   const closePopup = () => setPopup({ visible: false, title: '', message: '' });
-
+  const CompOffType = ["Full Day" , "HalfDay"];
   // Time picker states
   const [pickerVisible, setPickerVisible] = useState(false);
   const [currentField, setCurrentField] = useState(null); // "inTime" or "outTime"
@@ -104,7 +105,7 @@ const Regularize = ({ onSubmit, onSuccess }) => {
         `/attendance/daily_attendance?date=${date}`,
       );
       const data = response.data?.[0];
-
+    
       if (data) {
         const alreadyExists = entries.some(e => e.date === date);
         if (!alreadyExists) {
@@ -121,11 +122,7 @@ const Regularize = ({ onSubmit, onSuccess }) => {
             {
               id: Date.now(),
               date,
-              inTime: data.punch_in_time ? formatTime(inDate) : '',
-              outTime: data.punch_out_time ? formatTime(outDate) : '',
-              totalHours: data.working_hours
-                ? data.working_hours.toFixed(2)
-                : '',
+              dayType: '',
               reason: '',
             },
           ]);
@@ -144,17 +141,6 @@ const Regularize = ({ onSubmit, onSuccess }) => {
         if (e.id === id) {
           const updatedEntry = { ...e, [field]: value };
 
-          if (field === 'inTime' || field === 'outTime') {
-            const { inTime, outTime } = updatedEntry;
-            if (inTime && outTime) {
-              const [inH, inM] = inTime.split(':').map(Number);
-              const [outH, outM] = outTime.split(':').map(Number);
-              let diffMin = outH * 60 + outM - (inH * 60 + inM);
-              if (diffMin < 0) diffMin += 24 * 60;
-              const decimalHours = (diffMin / 60).toFixed(2);
-              updatedEntry.totalHours = decimalHours;
-            }
-          }
           return updatedEntry;
         }
         return e;
@@ -167,7 +153,7 @@ const Regularize = ({ onSubmit, onSuccess }) => {
     setSubmitting(true);
 
     const isValid = entries.every(
-      e => e.date && e.inTime && e.outTime && e.reason,
+      e => e.date && e.reason,
     );
     if (!isValid) {
       showPopup('Validation', 'Please fill all required fields.');
@@ -180,7 +166,7 @@ const Regularize = ({ onSubmit, onSuccess }) => {
       if (typeof onSuccess === 'function') {
         onSuccess();
       }
-      showPopup('Success', 'Your regularization request has been submitted.');
+      showPopup('Success', 'Your Apply CompOff request has been submitted.');
     } catch (error) {
       console.error('❌ Submit error:', error);
       showPopup('Error', 'Something went wrong while submitting.');
@@ -224,41 +210,32 @@ const Regularize = ({ onSubmit, onSuccess }) => {
               </View>
             </View>
 
-            <View style={styles.timeRow}>
-              {/* In Time Picker */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>In Time *</Text>
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={() => {
-                    setCurrentField('inTime');
-                    setSelectedEntryId(entry.id);
-                    setPickerVisible(true);
-                  }}
-                >
-                  <Text style={{ color: entry.inTime ? '#000' : '#888' }}>
-                    {entry.inTime || 'HH:MM'}
-                  </Text>
-                </TouchableOpacity>
-              </View>         
-
-              {/* Out Time Picker */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Out Time *</Text>
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={() => {
-                    setCurrentField('outTime');
-                    setSelectedEntryId(entry.id);
-                    setPickerVisible(true);
-                  }}
-                >
-                  <Text style={{ color: entry.outTime ? '#000' : '#888' }}>
-                    {entry.outTime || 'HH:MM'}
-                  </Text>
-                </TouchableOpacity>
+              {/* Day Type Picker */}
+              <View style={styles.reasonWrapper}>
+                <Text style={styles.label}>Select Type *</Text>
+                <View style={styles.input}>
+                  <Picker
+                    selectedValue={entry.dayType || ""}
+                    onValueChange={value => handleChange(entry.id, 'dayType', value)}
+                    style={styles.picker}
+                    mode="dialog"
+                  >
+                    <Picker.Item
+                      label="Select Type"
+                      value=""
+                      style={styles.pickerItem}
+                    />
+                    {CompOffType.map((dayType) => (
+                      <Picker.Item
+                        key={dayType}
+                        label={dayType}
+                        value={dayType}
+                        style={styles.pickerItem}
+                      />
+                    ))}
+                  </Picker>
+                </View>
               </View>
-            </View>
 
             <View style={styles.reasonWrapper}>
               <Text style={styles.label}>Select Reason *</Text>
@@ -444,20 +421,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: Platform.OS === 'ios' ? 10 : 8,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
     fontSize: 14,
+    height: 45,
     backgroundColor: '#fff',
     color: '#000',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   reasonWrapper: {
-    marginTop: 10,
+    marginTop: 4,
   },
   reasonInput: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 10,
-    height: 70,
+    padding: 4,
+    height: 50,
     textAlignVertical: 'top',
     backgroundColor: '#fff',
     color: '#0e120ef0',
@@ -466,7 +447,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 2,
     right: 8,
-    fontSize: 18,
+    fontSize: 12,
   },
   calendarContainer: {
     backgroundColor: '#fff',
@@ -512,6 +493,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  pickerItem: {
+  color: '#000000',
+  backgroundColor: '#fff',
+  fontSize: 14,
+},
+picker: {
+  color: '#000',
+  paddingHorizontal: 8,
+  height: 45,
+  justifyContent: 'center',
+},
+
 });
 
-export default Regularize;
+export default CompOff;

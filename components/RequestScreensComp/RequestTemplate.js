@@ -7,17 +7,26 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
 
-const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
+const RequestTemplate = ({ visible, appliedData, onClose, refreshData, MyRequest }) => {
   const [remark, setRemark] = useState('');
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupContent, setPopupContent] = useState({ title: '', message: '' });
   const onPopupCloseCallbackRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const requestType = appliedData?.request_type;
+  const isLeaveConsumption = requestType === "Leave";
+  const isCompOff =
+    requestType === "CompOff";
+const isApplyCompOff = requestType === "apply_CompOff";
+  const isRegularization = requestType === "Regularise Attendance";
+  const sectionTitle = MyRequest ;
+
 
   const showPopup = (title, message, onCloseCallback) => {
     setPopupContent({ title, message });
@@ -113,8 +122,8 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable style={styles.container} onPress={e => e.stopPropagation()}>
           {/* Close Button */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeText}>✕</Text>
@@ -122,7 +131,7 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
 
           <ScrollView>
             {/* Title */}
-            <Text style={styles.title}>{appliedData.request_type}</Text>
+            <Text style={styles.title}>{appliedData.leave_type?? appliedData.request_type}</Text>
 
             {/* Requestor Info */}
             <View style={styles.rowBetween}>
@@ -169,8 +178,13 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
             )}
 
             {/* Applied Dates */}
+            
             <Text style={styles.subTitle}>Applied Dates</Text>
+            
+            {!isCompOff && !isRegularization && !isApplyCompOff && (
+              <View>
             <View style={styles.tableHeader}>
+              
               <Text style={[styles.tableCell, { flex: 1 }]}>Applied Date</Text>
               <Text style={[styles.tableCell, { flex: 1 }]}>Start Date</Text>
               <Text style={[styles.tableCell, { flex: 1 }]}>End Date</Text>
@@ -196,12 +210,129 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
                 {appliedData.request_type}
               </Text>
             </View>
-
-            {/* Reason */}
-            <Text style={styles.label}>Reason</Text>
+             <Text style={styles.label}>Reason</Text>
             <Text style={styles.reasonBox}>{appliedData.reason || 'N/A'}</Text>
 
+            </View>
+            )}
+
+              {isCompOff && appliedData?.compOffData?.length > 0 && (
+                <View>
+                  <View style={styles.tableHeader}>
+                     <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
+                     <Text style={[styles.tableCell, { flex: 1 }]}>Credit Value</Text>
+                    {appliedData.compOffData.some(
+                    (d) => d.claimed_amount > 0
+                  ) && <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>}
+                  </View>
+                 {appliedData.compOffData.map((compOff) => (
+                  <View key={compOff.id} style={styles.tableRow}>
+                    <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {new Date(compOff.date).toLocaleDateString()}
+                    </Text>
+                    <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {compOff.dayValue || compOff.dayType || "N/A"}
+                    </Text>
+                    {appliedData.compOffData.some(
+                      
+                      (d) => d.claimed_amount > 0
+                    ) && <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {compOff.claimed_amount ?? 0}
+                    </Text>}
+                  </View>
+                ))}
+                 <Text style={styles.label}>Reason</Text>
+            <Text style={styles.reasonBox}>{appliedData.reason || 'N/A'}</Text>
+
+                </View>
+              )}
+ {isApplyCompOff && appliedData?.compOffData?.length > 0 && (
+                <View>
+                  <View style={styles.tableHeader}>
+                     <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
+                     <Text style={[styles.tableCell, { flex: 1 }]}>Credit Value</Text>
+                    {appliedData.compOffData.some(
+                    (d) => d.claimed_amount > 0
+                  ) && <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>}
+                  </View>
+                 {appliedData.compOffData.map((compOff) => (
+                   <View key={compOff.id} style={{ flexDirection: 'column', flex: 1 }}>
+                  <View style={styles.tableRow}>
+                    <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {new Date(compOff.date).toLocaleDateString()}
+                    </Text>
+                    <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {compOff.dayValue || compOff.dayType || "N/A"}
+                    </Text>
+                    {appliedData.compOffData.some(
+                      (d) => d.claimed_amount > 0
+                    ) && <Text style={[styles.tableCell, { flex: 1 }]}>
+                      {compOff.claimed_amount ?? 0}
+                    </Text>}
+                    </View>
+                <Text style={styles.label}>Reason: {compOff.reason || 'N/A'}</Text>
+              </View>
+                  
+                ))}
+                </View>
+              )}
+
+              {isRegularization && appliedData?.regulariseData?.length > 0 && (
+        <View>
+          <View style={styles.tableHeader}>
+            {/* <Text style={[styles.tableCell, { flex: 1 }]}>Type</Text> */}
+            <Text style={[styles.tableCell, { flex: 1 }]}>Applied On</Text>
+            <Text style={[styles.tableCell, { flex: 1 }]}>Submitted On</Text>
+            <Text style={[styles.tableCell, { flex: 0 }]}>In/</Text>
+            <Text style={[styles.tableCell, { flex: 0 }]}>Out</Text>
+            <Text style={[styles.tableCell, { flex: 1 }]}>Working Hrs</Text>
+          </View>
+            
+         
+            {appliedData.regulariseData.map((item) => (
+            <View key={item.id} style={{ flexDirection: 'column', flex: 1 }}>
+              <View style={styles.tableRow}>
+                {/* <Text style={[styles.tableCell, { flex: 1 }]}>
+                  {appliedData.request_type}
+                </Text> */}
+               
+                <Text style={[styles.tableCell, { flex: 1 }]}>
+                  {new Date(appliedData.raised_on).toLocaleDateString()}
+                </Text>
+                <Text style={[styles.tableCell, { flex: 1 }]}>
+                  {new Date(item.date).toLocaleDateString()}
+                </Text>
+                <Text style={[styles.tableCell, { flex: 0 }]}>
+                  {item.punch_in_time || "N/A"}/
+                </Text>
+                <Text style={[styles.tableCell, { flex: 0 }]}>
+                  {item.punch_out_time || "N/A"}
+                </Text>
+                <Text style={[styles.tableCell, { flex: 1 }]}>
+                  {item.working_hours || "N/A"}
+                </Text>
+              </View>
+                <Text style={styles.labe}>Reason:{item.reason || 'N/A'}</Text>
+              </View>
+              
+            ))}
+         
+         {/* {appliedData.regulariseData.map((it,index)=>(
+          <View key={index}>
+          <Text style={styles.label}>Reason</Text>
+            <Text style={styles.reasonBox}>{it.reason || 'N/A'}</Text>
+            </View>
+         ))} */}
+         </View>
+       
+      )}
+       
+            {/* Reason */}
+             
+           
             {/* Remark Input */}
+            {!sectionTitle&&(
+            <View>
             <Text style={styles.label}>Remark</Text>
             <TextInput
               placeholder="Enter your remark"
@@ -247,9 +378,12 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
                 </Text>
               </TouchableOpacity>
             </View>
+            </View>
+             )}
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
+           
 
       {/* 🔹 Global Popup (always centered, above everything) */}
       {popupVisible && (
@@ -270,7 +404,7 @@ const RequestTemplate = ({ visible, appliedData, onClose, refreshData }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -351,6 +485,10 @@ const styles = StyleSheet.create({
   label: {
     color: '#0e120eb5',
     fontWeight: '500',
+  },
+  labe:{
+    fontSize: 12,
+    color: '#474a47f0',
   },
   reasonBox: {
     borderWidth: 1,

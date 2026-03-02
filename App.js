@@ -5,7 +5,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppRegistry } from 'react-native';
 import App from './App';
@@ -81,9 +81,13 @@ const AppMain = () => {
     const setupFCMToken = async () => {
       const enabled = await requestUserPermission();
       if (enabled) {
-        const token = await messaging().getToken();
-        setFcmToken(token);
-        console.log('FCM Token:', token);
+        try {
+          const token = await messaging().getToken();
+          setFcmToken(token);
+          console.log('FCM Token:', token);
+        } catch (error) {
+          console.error('Error getting FCM token:', error);
+        }
       } else {
         console.log('FCM Permission denied');
       }
@@ -179,7 +183,7 @@ const AppMain = () => {
           )}
         </Stack.Navigator>
       </NavigationContainer>
-
+   
       {popupVisible && (
         <Popup
           title={popupTitle}

@@ -8,10 +8,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
+  ScrollView,
+  Pressable,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
+import { MMKV } from 'react-native-mmkv';
+import { getLeaveTypeAbbreviation, getRequestTypeLabel } from '../../src/utils/utils';
+
+const storage = new MMKV();
 
 // ---------- Helpers ----------
 const ymd = (year, month, day) =>
@@ -89,6 +95,20 @@ const TimerCalender = ({ refreshFlag }) => {
     }
   };
 
+  const fetchRequests = async controller => {
+    try {
+      const resp = await apiMiddleware.get('/request/get_all_requested_by_me', {
+        signal: controller?.signal,
+      });
+      // MyRequests component expects data in response.data.data
+      const requests = resp?.data?.data || [];
+      return requests;
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      return [];
+    }
+  };
+
   // ---------- Fetch policies & holidays ----------
   const fetchPoliciesAndHolidays = async (companyCode, controller) => {
     try {
@@ -129,7 +149,14 @@ const TimerCalender = ({ refreshFlag }) => {
   };
 
   // ---------- Merge Dates ----------
-  const buildMarkedDates = (workMap, weeklyOffs, holidaysArr, month, year) => {
+  const buildMarkedDates = (
+    workMap,
+    weeklyOffs,
+    holidaysArr,
+    requestsArr,
+    month,
+    year,
+  ) => {
     const merged = { ...workMap };
 
     // weekoffs
@@ -176,6 +203,64 @@ const TimerCalender = ({ refreshFlag }) => {
       };
     });
 
+    // requests (override/augment)
+    (requestsArr || []).forEach(r => {
+      // many request types have start_date/end_date OR arrays like compOffData/regulariseData
+      const markDate = ds => {
+        if (!ds) return;
+        const d = moment(ds);
+        if (!d.isValid()) return;
+        const key = d.format('YYYY-MM-DD');
+        const approved = r.isApproved=== true && r.completed_or_not === true;
+        const rejected = r.isApproved === false && r.completed_or_not === true;
+        const pending = r.completed_or_not === false;
+        
+        // Get abbreviated label based on request type
+        const requestLabel = getRequestTypeLabel(r);
+        
+        merged[key] = {
+          label: requestLabel,
+          source: 'request',
+          requestType: r.request_type,
+          leaveType: r.leave_type,
+          status: approved ? 'approved' : rejected ? 'rejected' : 'pending',
+          requestData: r,
+          customStyles: {
+            container: approved ? styles.requestApprovedContainer : rejected ? styles.requestRejectedContainer : styles.requestPendingContainer,
+            text: { color: approved ? '#34a612' : '#000' },
+          },
+        };
+      };
+
+      // range (start_date - end_date)
+      if (r.start_date && r.end_date) {
+        const start = moment(r.start_date);
+        const end = moment(r.end_date);
+        if (start.isValid() && end.isValid()) {
+          for (let m = start.clone(); m.isSameOrBefore(end); m.add(1, 'day')) {
+            markDate(m.format('YYYY-MM-DD'));
+          }
+          return; // handled
+        }
+      }
+
+      // compOffData dates
+      if (Array.isArray(r.compOffData) && r.compOffData.length > 0) {
+        r.compOffData.forEach(cd => markDate(cd.date || cd));
+        return;
+      }
+
+      // regulariseData dates
+      if (Array.isArray(r.regulariseData) && r.regulariseData.length > 0) {
+        r.regulariseData.forEach(rd => markDate(rd.date || rd));
+        return;
+      }
+
+      // fallback: start_date or raised_on
+      if (r.start_date) markDate(r.start_date);
+      else if (r.raised_on) markDate(r.raised_on);
+    });
+
     return merged;
   };
 
@@ -192,8 +277,17 @@ const TimerCalender = ({ refreshFlag }) => {
       );
       const workMap = await fetchWorkingHours(month, year, controller);
 
+      const requests = await fetchRequests(controller);
+
       setMarkedDates(
-        buildMarkedDates(workMap, profile.weeklyOff, holidays, month, year),
+        buildMarkedDates(
+          workMap,
+          profile.weeklyOff,
+          holidays,
+          requests,
+          month,
+          year,
+        ),
       );
     } finally {
       setLoading(false);
@@ -285,14 +379,26 @@ const TimerCalender = ({ refreshFlag }) => {
               ? '#1976D2'
               : m?.source === 'weekoff'
               ? '#FF9800'
+              : m?.source === 'request'
+              ? m?.status === 'approved'
+                ? '#56a214': m?.status === 'rejected'
+                ? '#ff3e3b' 
+                : '#f0d24de1'
               : m?.label
               ? getTimeColor(m.label)
               : '#000';
+
           const bgStyle =
             m?.source === 'holiday'
               ? styles.holidayBg
               : m?.source === 'weekoff'
               ? styles.weekOffBg
+              : m?.source === 'request'
+              ? m?.status === 'approved'
+                ? styles.requestApprovedBg
+                : m?.status === 'rejected'
+                ? styles.requestRejectedBg
+                : styles.requestPendingBg
               : styles.normalBg;
 
           const isOutsideMonth =
@@ -321,8 +427,8 @@ const TimerCalender = ({ refreshFlag }) => {
         transparent
         onRequestClose={closeModal}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+        <Pressable style={styles.modalContainer} onPress={closeModal}>
+          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
             <Text style={styles.modalText}>
               Date: <Text style={styles.modalDate}>{selectedDate}</Text>
             </Text>
@@ -340,6 +446,78 @@ const TimerCalender = ({ refreshFlag }) => {
                   </View>
                 ) : markedDates[selectedDate]?.source === 'weekoff' ? (
                   <Text style={styles.infoText}>This day is a Week Off</Text>
+                ) : markedDates[selectedDate]?.source === 'request' ? (
+                  <ScrollView style={styles.requestDetailContainer}>
+                    <View style={styles.requestContent}>
+                      <Text style={[styles.infoText, { marginBottom: 12 }]}>
+                        {markedDates[selectedDate]?.requestType}
+                      </Text>
+                      
+                      {markedDates[selectedDate]?.requestData?.leave_type && (
+                        <View style={styles.requestDetailRow}>
+                          <Text style={styles.detailLabel}>Leave Type:</Text>
+                          <Text style={styles.detailValue}>
+                            {markedDates[selectedDate]?.requestData.leave_type} ({getLeaveTypeAbbreviation(markedDates[selectedDate]?.requestData.leave_type)})
+                          </Text>
+                        </View>
+                      )}
+
+                      {
+                        markedDates[selectedDate]?.requestData?.raised_on != null &&(
+                           <View style={styles.requestDetailRow}>
+                          <Text style={styles.detailLabel}>Applied On:</Text>
+                          <Text style={styles.detailValue}>
+                            {markedDates[selectedDate]?.requestData.raised_on}
+                          </Text>
+                        </View>
+                        )}
+                      
+                      
+                      {markedDates[selectedDate]?.requestData?.number_of_days != null && (
+                        <View style={styles.requestDetailRow}>
+                          <Text style={styles.detailLabel}>Days:</Text>
+                          <Text style={styles.detailValue}>
+                            {markedDates[selectedDate]?.requestData.number_of_days}
+                          </Text>
+                        </View>
+                      )}
+                      
+                      {markedDates[selectedDate]?.requestData?.reason && (
+                        <View style={styles.requestDetailRow}>
+                          <Text style={styles.detailLabel}>Reason:</Text>
+                          <Text style={styles.detailValue}>
+                            {markedDates[selectedDate]?.requestData.reason}
+                          </Text>
+                        </View>
+                      )}
+                      
+                      {markedDates[selectedDate]?.requestData?.regulariseData && markedDates[selectedDate]?.requestData?.regulariseData?.length > 0 && (
+                        <View style={styles.regularizationContainer}>
+                          <Text style={[styles.detailLabel, { marginBottom: 8, marginTop: 8 }]}>Working Hours:</Text>
+                          {markedDates[selectedDate]?.requestData?.regulariseData.filter(item => {
+                            const itemDate = item?.date || item;
+                            const formatted = moment(itemDate).isValid() ? moment(itemDate).format('YYYY-MM-DD') : itemDate;
+                            return formatted === selectedDate;
+                          })?.map((item, idx) => (
+                            <View key={idx} style={[styles.regularizationRow, markedDates[selectedDate]?.requestData?.completed_or_not && styles.regularizationApproved]}>
+                              <Text style={styles.regularizationText}>
+                                {item.punch_in_time} - {item.punch_out_time}
+                              </Text>
+                              <Text style={[styles.regularizationHours, markedDates[selectedDate]?.requestData?.completed_or_not && styles.regularizationHoursApproved]}>
+                                {item.working_hours}
+                              </Text>
+                            </View>
+                          )) /* to apply approved style if any one entry is approved */}
+                        </View>
+                      )}
+                      
+                      <View style={[styles.requestStatusRow, markedDates[selectedDate]?.status === 'approved' ? styles.statusApproved : markedDates[selectedDate]?.status === 'rejected' ? styles.statusRejected : styles.statusPending]}>
+                        <Text style={[styles.statusText, markedDates[selectedDate]?.status === 'approved' ? styles.statusTextApproved  : markedDates[selectedDate]?.status === 'rejected' ? styles.statusTextRejected : styles.statusTextPending]}>
+                          Status: {(markedDates[selectedDate])?.status === 'approved' ? 'Approved ✓' : (markedDates[selectedDate])?.status === 'rejected' ? 'Rejected ✗' : 'Pending'}
+                        </Text>
+                      </View>
+                    </View>
+                  </ScrollView>
                 ) : attendanceData ? (
                   <View style={styles.dataContainer}>
                     <View style={styles.row}>
@@ -406,8 +584,8 @@ const TimerCalender = ({ refreshFlag }) => {
             <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -448,7 +626,9 @@ const styles = StyleSheet.create({
   normalBg: { backgroundColor: '#fff' },
   weekOffBg: { backgroundColor: '#FFF3E0' },
   holidayBg: { backgroundColor: '#E3F2FD' },
-
+  requestApprovedBg: { backgroundColor: '#15b8061a' },
+  requestPendingBg: { backgroundColor: '#d3d3d34c' },
+  requestRejectedBg: { backgroundColor: '#ff3e3b45' },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -500,4 +680,102 @@ const styles = StyleSheet.create({
   },
   dataText: { color: '#00503D', fontSize: 14, width: '50%', fontWeight: '700' },
   linkText: { color: '#0000FF', textDecorationLine: 'underline', marginTop: 8 },
+  requestApprovedContainer: {
+    borderRadius: 8,
+    padding: 4,
+    backgroundColor: '#4CAF50',
+  },
+  requestPendingContainer: {
+    borderRadius: 8,
+    padding: 4,
+    backgroundColor: '#FFEB3B',
+  },
+  requestDetailContainer: {
+    width: '100%',
+    maxHeight: 300,
+  },
+  requestContent: {
+    paddingVertical: 8,
+  },
+  requestDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  detailLabel: {
+    fontWeight: '600',
+    color: '#6a9689',
+    fontSize: 13,
+    flex: 0.4,
+  },
+  detailValue: {
+    color: '#00503D',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 0.6,
+    textAlign: 'right',
+  },
+  regularizationContainer: {
+    marginVertical: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  regularizationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginBottom: 4,
+    borderRadius: 6,
+    backgroundColor: '#f5f5f5',
+  },
+  regularizationApproved: {
+    backgroundColor: '#e8f5e9',
+  },
+  regularizationText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+  regularizationHours: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  regularizationHoursApproved: {
+    color: '#4CAF50',
+    fontWeight: '700',
+  },
+  requestStatusRow: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  statusApproved: {
+    backgroundColor: '#e8f5e9',
+  },
+  statusRejected: {
+    backgroundColor: '#ff6c6996',
+  },
+  statusPending: {
+    backgroundColor: '#fff3e0',
+  },
+  statusText: {
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  statusTextApproved: {
+    color: '#4CAF50',
+  },
+  statusTextRejected: {
+    color: '#ff3e3b',
+  },
+  statusTextPending: {
+    color: '#FF9800',
+  },
 });

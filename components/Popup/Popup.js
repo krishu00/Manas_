@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { Pressable, View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 
 const Popup = ({ title, message, onClose, autoClose = true }) => {
   useEffect(() => {
@@ -11,19 +11,27 @@ const Popup = ({ title, message, onClose, autoClose = true }) => {
       return () => clearTimeout(timer); // cleanup
     }
   }, [autoClose, onClose]);
+  const handleOverlayPress = () => {
+    onClose();
+  };
+
+  
 
   return (
-    <Modal transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.popup}>
+    <Modal transparent animationType="fade"  onRequestClose={onClose}>
+       <Pressable style={styles.overlay} onPress={handleOverlayPress}>
+         <Pressable style={styles.container} onPress={e => e.stopPropagation()}>
+         <View style={styles.popup} onStartShouldSetResponder={() => true}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
           <TouchableOpacity style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>OK</Text>
           </TouchableOpacity>
-        </View>
-      </View>
+       </View>
+      </Pressable>
+      </Pressable>
     </Modal>
+   
   );
 };
 

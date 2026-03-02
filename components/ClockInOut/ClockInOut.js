@@ -331,6 +331,7 @@ export default class ClockInOut extends React.Component {
 
     return (
       <>
+      <TouchableOpacity activeOpacity={1}>
         <View style={styles.container}>
           <StatusBar hidden={true} />
           <View style={styles.clockContainer}>
@@ -451,6 +452,7 @@ export default class ClockInOut extends React.Component {
             )}
           </View>
         </View>
+        </TouchableOpacity>
         {this.state.popupVisible && (
           <Popup
             title={this.state.popupTitle}

@@ -84,8 +84,48 @@ const Leave = ({ onClose, onSuccess }) => {
     let diff = end.diff(start, 'days') + 1;
 
     // half-day adjustments like in web
-    if (startDayType !== 'full_day') diff -= 0.5;
-    if (endDayType !== 'full_day') diff -= 0.5;
+    if (
+      (start === end) &&
+      (startDayType === "first_session" &&
+      endDayType === "first_session") 
+    ) {
+      diff = 0.5;
+    }
+    if (
+      (startDayType === "first_session" &&
+      endDayType === "first_session") 
+    ) {
+      diff -= 0.5;
+    }
+    
+    if (
+      startDayType === "full_day" &&
+      endDayType === "first_session"
+    ) {
+      diff -= 0.5;
+    }
+
+     if (
+      startDayType === "second_session" &&
+      endDayType === "full_day"
+    ) {
+      diff -= 0.5;
+    }
+
+    if (
+      startDayType === "second_session" &&
+      endDayType === "second_session"
+    ) {
+      diff -= 0.5;
+    }
+    if (
+      startDayType === "second_session" &&
+      endDayType === "first_session"
+    ) {
+      diff -= 1;
+    }
+  
+    
 
     return diff > 0 ? diff.toString() : '';
   };
@@ -409,8 +449,9 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     fontSize: 14, // 🔹 better visibility
-    color: '#222',
+    color: '#171616',
     fontWeight: '500',
+    backgroundColor: '#fff',
   },
   textArea: {
     height: 100,

@@ -6,10 +6,13 @@ buildscript {
         targetSdkVersion = 35
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
+        googlePlayServicesLocationVersion = "21.0.1"
+
     }
     repositories {
         google()
         mavenCentral()
+         maven { url 'https://www.jitpack.io' }
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
@@ -23,3 +26,10 @@ buildscript {
 apply plugin: "com.facebook.react.rootproject"
 apply plugin: 'com.google.gms.google-services'
 
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            force "com.google.android.gms:play-services-location:21.0.1"
+        }
+    }
+}

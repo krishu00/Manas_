@@ -7,16 +7,22 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
+import RequestTemplate from '../RequestScreensComp/RequestTemplate';
 
-const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
+
+const MyRequests = ({ refreshFlag, setRefreshFlag  }) => {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [errorPopup, setErrorPopup] = useState(null);
+  const [MyRequest, setMyRequest] = useState(true);
 
   const fetchApprovals = async () => {
     setLoading(true);
@@ -44,7 +50,7 @@ const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchApprovals();
-  }, []);
+  }, []);       
 
   const renderHeader = () => (
     <View style={[styles.row, styles.headerRow]}>
@@ -52,8 +58,8 @@ const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
       <Text style={[styles.cell, styles.type]}>Request Type</Text>
       <Text style={[styles.cell, styles.date]}>Applied On</Text>
       <Text style={[styles.cell, styles.status]}>Status</Text>
-      <Text style={[styles.cell, styles.date]}>Start Date</Text>
-      <Text style={[styles.cell, styles.date]}>End Date</Text>
+      {/* <Text style={[styles.cell, styles.date]}>Start Date</Text>
+      <Text style={[styles.cell, styles.date]}>End Date</Text> */}
     </View>
   );
 
@@ -64,27 +70,32 @@ const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
     const endDate = item.end_date ? new Date(item.end_date).toLocaleDateString() : '--/--';
 
     return (
+        
       <View style={[styles.row, { backgroundColor: isEvenRow ? '#ffffff' : '#f4f4f4' }]}>
         <Text style={[styles.cell, styles.sn]}>{index + 1}</Text>
+        <TouchableOpacity onPress={() => setSelectedRequest(item)}>
         <Text style={[styles.cell, styles.type, { color: '#d9534f' }]}>{item.request_type}</Text>
+        </TouchableOpacity>
         <Text style={[styles.cell, styles.date]}>{appliedDate}</Text>
         <Text
           style={[
             styles.cell,
             styles.status,
-            item.completed_or_not ? styles.approved : styles.pending,
+            item.completed_or_not ? item.isApproved === true ? styles.approved : styles.rejected : styles.pending,
           ]}
         >
-          {item.completed_or_not ? 'Approved' : 'Pending'}
+          {item.completed_or_not ? item.isApproved === true ? 'Approved' : 'Rejected' : 'Pending'}
         </Text>
-        <Text style={[styles.cell, styles.date]}>{startDate}</Text>
-        <Text style={[styles.cell, styles.date]}>{endDate}</Text>
+        {/* <Text style={[styles.cell, styles.date]}>{startDate}</Text>
+        <Text style={[styles.cell, styles.date]}>{endDate}</Text> */}
       </View>
     );
   };
 
   return (
+    
     <View style={styles.container}>
+      <TouchableOpacity activeOpacity={1} >
       {loading ? (
         <ActivityIndicator size="large" color="#6a9689" />
       ) : approvals.length === 0 ? (
@@ -110,6 +121,7 @@ const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
             />
           </View>
         </ScrollView>
+        
       )}
 
       {popupVisible && (
@@ -119,7 +131,27 @@ const MyRequests = ({ refreshFlag, setRefreshFlag }) => {
           onClose={() => setPopupVisible(false)}
         />
       )}
+       {selectedRequest && (
+        <RequestTemplate
+          visible={!!selectedRequest}
+          appliedData={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          refreshData={fetchApprovals}
+          MyRequest={MyRequest}
+        />
+      )}
+
+      {errorPopup && (
+        <Popup
+          title={errorPopup.title}
+          message={errorPopup.message}
+          onClose={() => setErrorPopup(null)}
+        />
+      )}
+      </TouchableOpacity>
     </View>
+    
+    
   );
 };
 
@@ -127,7 +159,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    padding: 12,
+    padding: 8,
   },
   emptyText: {
     fontSize: 16,
@@ -140,20 +172,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e1e1e1',
     paddingVertical: 10,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     alignItems: 'center',
+    width: 380, // Set a fixed width for horizontal scrolling
   },
   headerRow: {
     backgroundColor: '#dbead7',
   },
   cell: {
     fontSize: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
     textAlign: 'center',
     color: '#050505ff',
+    flex:1,
   },
   sn: {
-    width: 40,
+    width: 30,
     fontWeight: '500',
   },
   type: {
@@ -174,6 +208,9 @@ const styles = StyleSheet.create({
   },
   pending: {
     color: '#FF9800',
+  },
+  rejected: {
+    color: '#f44336',
   },
 });
 

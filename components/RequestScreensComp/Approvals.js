@@ -103,7 +103,7 @@ const Approvals = ({
       : 'N/A';
 
     return (
-      <TouchableOpacity onPress={() => setSelectedRequest(item)}>
+        
         <View
           style={[
             styles.row,
@@ -114,12 +114,14 @@ const Approvals = ({
           <Text style={[styles.cell, styles.name]} numberOfLines={1}>
             {item.requestor_name}
           </Text>
+           <TouchableOpacity onPress={() => setSelectedRequest(item)}>
           <Text
             style={[styles.cell, styles.type, { color: '#d9534f' }]}
             numberOfLines={1}
           >
             {item.request_type}
           </Text>
+          </TouchableOpacity>
           <Text style={[styles.cell, styles.date]} numberOfLines={1}>
             {appliedDate}
           </Text>
@@ -133,12 +135,13 @@ const Approvals = ({
             {item.completed_or_not ? 'Approved' : 'Pending'}
           </Text>
         </View>
-      </TouchableOpacity>
+    
     );
   };
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity activeOpacity={1} >
       {loading ? (
         <ActivityIndicator size="large" color="#6a9689" />
       ) : approvals.length === 0 ? (
@@ -161,6 +164,7 @@ const Approvals = ({
                 />
               }
             />
+            
           </View>
         </ScrollView>
       )}
@@ -181,6 +185,7 @@ const Approvals = ({
           onClose={() => setErrorPopup(null)}
         />
       )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -208,7 +213,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#050505ff',
   },
-  sn: { width: 40, fontWeight: '500' },
+  sn: { width: 35, fontWeight: '500' },
   name: { width: 100, fontWeight: '500' },
   type: { width: 90, fontWeight: '500' },
   date: { width: 75, fontWeight: '500' },

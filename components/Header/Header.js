@@ -6,15 +6,17 @@ import {
   View,
   Image,
   TouchableWithoutFeedback,
+  Pressable,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { MMKV } from 'react-native-mmkv';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
 
 const storage = new MMKV();
 
-const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
+const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateToSalary, onNavigateToProfile, onDropdownVisibleChange }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -23,7 +25,6 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
     title: '',
     message: '',
   });
-
   useEffect(() => {
     const controller = new AbortController();
     UserDetails(controller);
@@ -50,7 +51,11 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
   };
 
   const handleToggleDropdown = () => {
-    setDropdownVisible(prev => !prev);
+    setDropdownVisible(prev => {
+      const newVal = !prev;
+      onDropdownVisibleChange && onDropdownVisibleChange(newVal);
+      return newVal;
+    });
   };
 
   const handleOutsidePress = () => {
@@ -62,6 +67,7 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
   useEffect(() => {
     if (closeDropdownFlag && dropdownVisible) {
       setDropdownVisible(false);
+      onDropdownVisibleChange && onDropdownVisibleChange(false);
       closeDropdown(false); // reset flag
     }
   }, [closeDropdownFlag]);
@@ -74,7 +80,7 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
   const UserDetails = async controller => {
     try {
       const storedEmployeeId = storage.getString('employee_id');
-      const storedCompanyCode = storage.getString('companyCode');
+      const storedCompanyCode = storage.getString('company_Code');  
 
       if (!storedEmployeeId || !storedCompanyCode) {
         showPopup('Error', 'Unable to retrieve stored data');
@@ -111,6 +117,7 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
   };
 
   return (
+   
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
         <LinearGradient
@@ -125,23 +132,60 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
           />
 
           <View style={styles.userInfoContainer}>
-            <TouchableOpacity onPress={handleToggleDropdown}>
-              <Text style={styles.username}>{name || 'Employee Name'}</Text>
-              <Text style={styles.userId}>{employeeId || 'Employee ID'}</Text>
+            <TouchableOpacity
+              onPress={handleToggleDropdown}
+              style={styles.userInfoRow}
+            >
+              <View style={styles.userTextContainer}>
+                <Text style={styles.username}>{name.split(' ')[0] || 'Employee Name'}</Text>
+                <Text style={styles.userId}>{employeeId || 'Employee ID'}</Text>
+              </View>
+              <Icon name="user-circle" size={32} color="#00503D" />
             </TouchableOpacity>
 
             {dropdownVisible && (
-              <View style={styles.dropdownContainer}>
-                <TouchableOpacity
-                  onPress={handleLogout}
-                  style={styles.dropdownOption}
-                >
-                  <Text style={styles.dropdownText}>Logout</Text>
-                </TouchableOpacity>
+              <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+                {/* invisible fullscreen layer to catch outside taps */}
+                <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+                  <View style={styles.fullscreenOverlay} />
+                </TouchableWithoutFeedback>
+
+                <View style={styles.dropdownContainer} pointerEvents="auto">
+                  <TouchableOpacity
+                    onPress={() => {
+                      setDropdownVisible(false);
+                      onNavigateToProfile();
+                    }}
+                    style={styles.dropdownOption}
+                  >
+                    <Text style={styles.dropdownText}>
+                      <Icon name="user" size={18} color="#81BAA5" />  Profile
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log('🔵 Salary button pressed, calling onNavigateToSalary');
+                      setDropdownVisible(false);
+                      onNavigateToSalary();
+                    }}
+                    style={styles.dropdownOption}
+                  >
+                    <Text style={styles.dropdownText}>
+                     <Icon name="dollar" size={18} color="#81BAA5" />  Salary
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleLogout}
+                    style={styles.dropdownOption}
+                  >
+                    <Text style={styles.dropdownText}><Icon name="sign-out" size={18} color="#81BAA5" /> Logout</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
         </LinearGradient>
+
 
         {popup.visible && (
           <Popup
@@ -152,6 +196,7 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag }) => {
         )}
       </View>
     </TouchableWithoutFeedback>
+   
   );
 };
 
@@ -160,27 +205,36 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerContainer: {
-    paddingVertical: 10,
+    paddingTop: 20,
+    paddingBottom: 10,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   logo: {
-    width: 160,
+    width: 140,
     height: 50,
     resizeMode: 'contain',
   },
   userInfoContainer: {
     alignItems: 'flex-end',
   },
+  userInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  userTextContainer: {
+    alignItems: 'flex-end',
+  },
   username: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#00503D',
   },
   userId: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#00503D',
     fontWeight: '700',
   },
@@ -192,14 +246,23 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginTop: 17,
     padding: 8,
+    elevation: 100,
+    zIndex: 6000,
   },
   dropdownOption: {
-    padding: 3,
+    padding: 5 ,
   },
   dropdownText: {
     color: '#81BAA5',
     fontWeight: '600',
-    width: 50,
+    width: 80,
+    fontSize: 18,
+    paddingBottom: 5,
+  },
+  fullscreenOverlay: {
+    position: 'absolute',
+   
+    zIndex: 1000, // below dropdownContainer
   },
 });
 
