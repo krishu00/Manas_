@@ -97,7 +97,8 @@
 import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigationState } from '@react-navigation/native';
 import Header from './Header/Header';
 import HomeScreen from './Screens/HomeScreen';
 import FeedsScreen from './Screens/FeedsScreen';
@@ -132,9 +133,18 @@ const Dashboard = ({ onLogoutSuccess }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [tabNavigation, setTabNavigation] = useState(null);
   
+  const navigation = useNavigation();
+  const currentTabIndex = useNavigationState(state => state.index);
+  
   const handleOutsidePress = () => {
     setCloseDropdownFlag(true);
   };
+
+  // Reset dropdown when tab changes
+  useEffect(() => {
+    setDropdownVisible(false);
+    setCloseDropdownFlag(false);
+  }, [currentTabIndex]);
 
   const handleNavigateToSalary = () => {
     console.log('🟡 handleNavigateToSalary called');
@@ -151,6 +161,7 @@ const Dashboard = ({ onLogoutSuccess }) => {
     console.log('🟡 tabNavigation exists:', !!tabNavigation);
     if (tabNavigation) {
       console.log('🟡 Calling navigate to Profile');
+      setDropdownVisible(false); // Close dropdown before navigating
       tabNavigation.navigate('UserProfile');
     } else {
       console.log('🟡 ERROR: tabNavigation is null/undefined');

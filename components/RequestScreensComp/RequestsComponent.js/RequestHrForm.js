@@ -90,10 +90,13 @@ const RequestHrForm = ({ onSuccess, companyCode, employeeId }) => {
         'Error',
         error?.response?.data?.message || 'Something went wrong.',
       );
-    } finally {
       setLoading(false);
       setSubmitting(false);
-    }
+    } 
+    // finally {
+    //   setLoading(false);
+    //   setSubmitting(false);
+    // }
   };
 
   return (

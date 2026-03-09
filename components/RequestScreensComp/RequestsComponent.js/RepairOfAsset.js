@@ -82,9 +82,11 @@ const RepairOfAsset = ({ navigation, onSuccess }) => {
         'Error',
         error.response?.data?.message || 'Something went wrong.',
       );
-    } finally {
       setSubmitting(false);
-    }
+    } 
+    // finally {
+    //   setSubmitting(false);
+    // }
   };
 
   return (

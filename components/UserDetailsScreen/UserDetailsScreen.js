@@ -87,7 +87,11 @@ const UserDetailsScreen = () => {
   } = employeeData || {};
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={true}
+    >
       {/* Employee Details */}
       <DetailsSection
         title="👤 Employee Details"
@@ -209,8 +213,11 @@ const UserDetailsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
     backgroundColor: '#fff',
+  },
+  contentContainer: {
+    padding: 15,
+    paddingBottom: 30, // extra padding at bottom
   },
   center: {
     flex: 1,

@@ -166,13 +166,15 @@ const CompOff = ({ onSubmit, onSuccess }) => {
       if (typeof onSuccess === 'function') {
         onSuccess();
       }
-      showPopup('Success', 'Your Apply CompOff request has been submitted.');
+      // showPopup('Success', 'Your Apply CompOff request has been submitted.');
     } catch (error) {
       console.error('❌ Submit error:', error);
       showPopup('Error', 'Something went wrong while submitting.');
-    } finally {
       setSubmitting(false);
-    }
+    } 
+    // finally {
+    //   setSubmitting(false);
+    // }
   };
 
   const onDayPress = day => {

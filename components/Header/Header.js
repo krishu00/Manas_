@@ -51,12 +51,13 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
   };
 
   const handleToggleDropdown = () => {
-    setDropdownVisible(prev => {
-      const newVal = !prev;
-      onDropdownVisibleChange && onDropdownVisibleChange(newVal);
-      return newVal;
-    });
+    setDropdownVisible(prev => !prev);
   };
+
+  // Notify parent when dropdown visibility changes
+  useEffect(() => {
+    onDropdownVisibleChange && onDropdownVisibleChange(dropdownVisible);
+  }, [dropdownVisible, onDropdownVisibleChange]);
 
   const handleOutsidePress = () => {
     if (dropdownVisible) {
@@ -67,7 +68,6 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
   useEffect(() => {
     if (closeDropdownFlag && dropdownVisible) {
       setDropdownVisible(false);
-      onDropdownVisibleChange && onDropdownVisibleChange(false);
       closeDropdown(false); // reset flag
     }
   }, [closeDropdownFlag]);

@@ -129,10 +129,10 @@ const Approvals = ({
             style={[
               styles.cell,
               styles.status,
-              item.completed_or_not ? styles.approved : styles.pending,
+               item.completed_or_not ? item.isApproved === true ? styles.approved : styles.rejected : styles.pending,
             ]}
           >
-            {item.completed_or_not ? 'Approved' : 'Pending'}
+            {item.completed_or_not ? item.isApproved === true ? 'Approved' : 'Rejected' : 'Pending'}
           </Text>
         </View>
     
@@ -220,6 +220,7 @@ const styles = StyleSheet.create({
   status: { width: 70, fontWeight: '500' },
   approved: { color: '#4CAF50' },
   pending: { color: '#FF9800' },
+  rejected: { color: '#F44336' },
 });
 
 export default Approvals;
