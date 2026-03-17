@@ -3,9 +3,10 @@ import {
 View,
 Text,
 StyleSheet,
-TouchableOpacity
+TouchableOpacity,
+ActivityIndicator
 } from "react-native";
-
+import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Icon from "react-native-vector-icons/FontAwesome";
 import {Picker} from "@react-native-picker/picker";
 import axios from "axios";
@@ -21,6 +22,8 @@ const currentMonth = today.getMonth() + 1;
 const [year,setYear]=useState(currentYear);
 const [month,setMonth]=useState(currentMonth);
 const [payslipResponse,setPayslipResponse]=useState(null);
+const [loading,setLoading]=useState(false); // spinner for fetch
+const [searched,setSearched]=useState(false); // track if user pressed search
 const yearList=[2024,2025,2026,2027];
 
 const monthList=[
@@ -253,13 +256,59 @@ const res=
     ]
   }
 }
+// const response = axios.get(
+//   `${API_URL}/payslip/my_payslips`,
+//   {
+//     params: {
+//       month,
+//       year
+//     }
+//   }
+// )
 
+// const fetchPayslip= async()=>{
+//   const response = await axios.get(
+//   `${API_URL}/payslip/my_payslips`,
+//   {
+//     params: {
+//       month,
+//       year
+//     }
+//   }
+// )
+//    setPayslipResponse(response.data.data);
+//  //setPayslipResponse(response.data.data);
+// console.log("Pr",payslipResponse);
+// };
+ const fetchPayslip= async()=>{
+ if (!year || !month) {
+      alert("Please enter Year and Month");
+      return;
+    }
 
-const fetchPayslip= async()=>{
- setPayslipResponse(res.data);
-console.log("Pr",payslipResponse);
-};
+    try {
+      setSearched(true);
+      setLoading(true);
 
+      const res =  await apiMiddleware.get(`/payslip/my_payslips`, {
+          params: { year, month },
+          
+        }
+      );
+
+      if (res.data.success && res.data.count > 0) {
+        setPayslipResponse(res.data.data);
+      } else {
+        // no alert any longer; UI will show message
+        setPayslipResponse(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setPayslipResponse(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 return(
 
 <View style={styles.container}>
@@ -293,9 +342,7 @@ value={y}
 ))}
 
 </Picker>
-
 </View>
-
 
 <View style={styles.dateBox}>
 <Text style={styles.pickerText}>{monthList.find(m=>m.value===month)?.label || "Month"}</Text>
@@ -313,7 +360,6 @@ key={m.value}
 label={m.label}
 value={m.value}
 />
-
 ))}
 
 </Picker>
@@ -334,22 +380,18 @@ color="#fff"
 
 </TouchableOpacity>
 
-
 </View>
-
 
 {/* PAYSLIP BELOW */}
 
 <View style={styles.payslipArea}>
-
-{payslipResponse &&(
-
-<PayslipTemplate
-payslipResponse={payslipResponse}
-/>
-
-)}
-
+  {loading ? (
+    <ActivityIndicator size="large" color="#6a9689" />
+  ) : payslipResponse ? (
+    <PayslipTemplate payslipResponse={payslipResponse} />
+  ) : searched ? (
+    <Text style={styles.noDataText}>No Payslip found</Text>
+  ) : null}
 </View>
 
 
@@ -413,6 +455,12 @@ marginRight:2
 payslipArea:{
 marginTop:15,
 alignItems:"center"
+},
+
+noDataText:{
+  fontSize:16,
+  color:"#555",
+  marginTop:20
 }
 
 });
