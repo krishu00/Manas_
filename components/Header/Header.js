@@ -16,7 +16,14 @@ import Popup from '../Popup/Popup';
 
 const storage = new MMKV();
 
-const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateToSalary, onNavigateToProfile, onDropdownVisibleChange }) => {
+const Header = ({
+  onLogoutSuccess,
+  closeDropdown,
+  closeDropdownFlag,
+  onNavigateToSalary,
+  onNavigateToProfile,
+  onDropdownVisibleChange,
+}) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -80,7 +87,7 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
   const UserDetails = async controller => {
     try {
       const storedEmployeeId = storage.getString('employee_id');
-      const storedCompanyCode = storage.getString('company_Code');  
+      const storedCompanyCode = storage.getString('company_Code');
 
       if (!storedEmployeeId || !storedCompanyCode) {
         showPopup('Error', 'Unable to retrieve stored data');
@@ -117,7 +124,6 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
   };
 
   return (
-   
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={styles.container}>
         <LinearGradient
@@ -137,7 +143,9 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
               style={styles.userInfoRow}
             >
               <View style={styles.userTextContainer}>
-                <Text style={styles.username}>{name.split(' ')[0] || 'Employee Name'}</Text>
+                <Text style={styles.username}>
+                  {name.split(' ')[0] || 'Employee Name'}
+                </Text>
                 <Text style={styles.userId}>{employeeId || 'Employee ID'}</Text>
               </View>
               <Icon name="user-circle" size={32} color="#00503D" />
@@ -146,7 +154,9 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
             {dropdownVisible && (
               <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
                 {/* invisible fullscreen layer to catch outside taps */}
-                <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+                <TouchableWithoutFeedback
+                  onPress={() => setDropdownVisible(false)}
+                >
                   <View style={styles.fullscreenOverlay} />
                 </TouchableWithoutFeedback>
 
@@ -159,33 +169,36 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
                     style={styles.dropdownOption}
                   >
                     <Text style={styles.dropdownText}>
-                      <Icon name="user" size={18} color="#81BAA5" />  Profile
+                      <Icon name="user" size={18} color="#81BAA5" /> Profile
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      console.log('🔵 Salary button pressed, calling onNavigateToSalary');
+                      console.log(
+                        '🔵 Salary button pressed, calling onNavigateToSalary',
+                      );
                       setDropdownVisible(false);
                       onNavigateToSalary();
                     }}
                     style={styles.dropdownOption}
                   >
                     <Text style={styles.dropdownText}>
-                     <Icon name="dollar" size={18} color="#81BAA5" />  Salary
+                      <Icon name="dollar" size={18} color="#81BAA5" /> Salary
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleLogout}
                     style={styles.dropdownOption}
                   >
-                    <Text style={styles.dropdownText}><Icon name="sign-out" size={18} color="#81BAA5" /> Logout</Text>
+                    <Text style={styles.dropdownText}>
+                      <Icon name="sign-out" size={18} color="#81BAA5" /> Logout
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
           </View>
         </LinearGradient>
-
 
         {popup.visible && (
           <Popup
@@ -196,7 +209,6 @@ const Header = ({ onLogoutSuccess, closeDropdown, closeDropdownFlag, onNavigateT
         )}
       </View>
     </TouchableWithoutFeedback>
-   
   );
 };
 
@@ -250,18 +262,21 @@ const styles = StyleSheet.create({
     zIndex: 6000,
   },
   dropdownOption: {
-    padding: 5 ,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row', // This places the icon and text side-by-side
+    alignItems: 'center',
   },
   dropdownText: {
     color: '#81BAA5',
     fontWeight: '600',
     width: 80,
-    fontSize: 18,
-    paddingBottom: 5,
+    // fontSize: 18,
+    // paddingBottom: 5,
   },
   fullscreenOverlay: {
     position: 'absolute',
-   
+
     zIndex: 1000, // below dropdownContainer
   },
 });

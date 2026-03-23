@@ -12,21 +12,26 @@ import {
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
 
-const RequestTemplate = ({ visible, appliedData, onClose, refreshData, MyRequest }) => {
+const RequestTemplate = ({
+  visible,
+  appliedData,
+  onClose,
+  refreshData,
+  MyRequest,
+}) => {
   const [remark, setRemark] = useState('');
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupContent, setPopupContent] = useState({ title: '', message: '' });
   const onPopupCloseCallbackRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
-  const requestType = appliedData?.request_type;
-  const isLeaveConsumption = requestType === "Leave";
-  const isCompOff =
-    requestType === "CompOff";
-const isApplyCompOff = requestType === "apply_CompOff";
-  const isRegularization = requestType === "Regularise Attendance";
-  const sectionTitle = MyRequest ;
 
+  const requestType = appliedData?.request_type;
+  const isLeaveConsumption = requestType === 'Leave';
+  const isCompOff = requestType === 'CompOff';
+  const isApplyCompOff = requestType === 'apply_CompOff';
+  const isRegularization = requestType === 'Regularise Attendance';
+  const sectionTitle = MyRequest;
 
   const showPopup = (title, message, onCloseCallback) => {
     setPopupContent({ title, message });
@@ -46,7 +51,6 @@ const isApplyCompOff = requestType === "apply_CompOff";
 
   if (!appliedData) return null;
 
-  // 🔹 Fetch leave balance when modal opens
   useEffect(() => {
     const fetchLeaveBalance = async () => {
       try {
@@ -72,9 +76,8 @@ const isApplyCompOff = requestType === "apply_CompOff";
     }
   }, [visible, appliedData?.requestor_id]);
 
-  // 🔹 Handle Approve/Reject
   const handleAction = async action => {
-    if (submitting) return; // 🚫 prevent multiple clicks
+    if (submitting) return;
     setSubmitting(true);
     try {
       if (!remark.trim()) {
@@ -83,7 +86,6 @@ const isApplyCompOff = requestType === "apply_CompOff";
       }
 
       const encrypt_id = appliedData?.encrypt_id;
-      console.log('encrypt_id', encrypt_id);
 
       if (!encrypt_id) {
         showPopup('Error', 'Invalid request data.');
@@ -111,7 +113,7 @@ const isApplyCompOff = requestType === "apply_CompOff";
         }`,
       );
     } finally {
-      setSubmitting(false); // 🔹 re-enable buttons
+      setSubmitting(false);
     }
   };
 
@@ -123,16 +125,22 @@ const isApplyCompOff = requestType === "apply_CompOff";
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-          <Pressable style={styles.container} onPress={e => e.stopPropagation()}>
+        <Pressable style={styles.container} onPress={e => e.stopPropagation()}>
           {/* Close Button */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
 
-          <ScrollView>
-            {/* Title */}
-            <Text style={styles.title}>{appliedData.leave_type?? appliedData.request_type}</Text>
+          {/* Title */}
+          <Text style={styles.title}>
+            {appliedData.leave_type ?? appliedData.request_type}
+          </Text>
 
+          {/* 1. SCROLLABLE CONTENT AREA */}
+          <ScrollView
+            style={styles.scrollArea}
+            showsVerticalScrollIndicator={true}
+          >
             {/* Requestor Info */}
             <View style={styles.rowBetween}>
               <Text style={styles.userText}>
@@ -146,12 +154,12 @@ const isApplyCompOff = requestType === "apply_CompOff";
                     : styles.pending,
                 ]}
               >
-                <Text style={styles.statusHeading}>Status : </Text>
+                <Text style={styles.statusHeading}>Status: </Text>
                 {appliedData.completed_or_not ? 'Approved' : 'Pending'}
               </Text>
             </View>
 
-            {/* 🔹 Leave Balance Section */}
+            {/* Leave Balance Section */}
             <Text style={styles.subTitle}>Leave Balance</Text>
             {leaveBalance?.leaveDetails?.length > 0 ? (
               <View>
@@ -177,187 +185,191 @@ const isApplyCompOff = requestType === "apply_CompOff";
               <Text style={styles.value}>No leave balance available.</Text>
             )}
 
-            {/* Applied Dates */}
-            
+            {/* Applied Dates - Standard Leaves */}
             <Text style={styles.subTitle}>Applied Dates</Text>
-            
             {!isCompOff && !isRegularization && !isApplyCompOff && (
               <View>
-            <View style={styles.tableHeader}>
-              
-              <Text style={[styles.tableCell, { flex: 1 }]}>Applied Date</Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>Start Date</Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>End Date</Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>Leave Type</Text>
-            </View>
-            <View style={styles.tableRow}>
-              <Text style={[styles.tableCell, { flex: 1 }]}>
-                {appliedData.raised_on
-                  ? new Date(appliedData.raised_on).toLocaleDateString()
-                  : 'N/A'}
-              </Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>
-                {appliedData.start_date
-                  ? new Date(appliedData.start_date).toLocaleDateString()
-                  : 'N/A'}
-              </Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>
-                {appliedData.end_date
-                  ? new Date(appliedData.end_date).toLocaleDateString()
-                  : 'N/A'}
-              </Text>
-              <Text style={[styles.tableCell, { flex: 1 }]}>
-                {appliedData.request_type}
-              </Text>
-            </View>
-             <Text style={styles.label}>Reason</Text>
-            <Text style={styles.reasonBox}>{appliedData.reason || 'N/A'}</Text>
-
-            </View>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Applied Date
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Start Date
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>End Date</Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Leave Type
+                  </Text>
+                </View>
+                <View style={styles.tableRow}>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {appliedData.raised_on
+                      ? new Date(appliedData.raised_on).toLocaleDateString()
+                      : 'N/A'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {appliedData.start_date
+                      ? new Date(appliedData.start_date).toLocaleDateString()
+                      : 'N/A'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {appliedData.end_date
+                      ? new Date(appliedData.end_date).toLocaleDateString()
+                      : 'N/A'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {appliedData.request_type}
+                  </Text>
+                </View>
+                <Text style={styles.label}>Reason</Text>
+                <Text style={styles.reasonBox}>
+                  {appliedData.reason || 'N/A'}
+                </Text>
+              </View>
             )}
 
-              {isCompOff && appliedData?.compOffData?.length > 0 && (
-                <View>
-                  <View style={styles.tableHeader}>
-                     <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
-                     <Text style={[styles.tableCell, { flex: 1 }]}>Credit Value</Text>
-                    {appliedData.compOffData.some(
-                    (d) => d.claimed_amount > 0
-                  ) && <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>}
-                  </View>
-                 {appliedData.compOffData.map((compOff) => (
-                  <View key={compOff.id} style={styles.tableRow}>
+            {/* CompOff Data */}
+            {isCompOff && appliedData?.compOffData?.length > 0 && (
+              <View>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Credit Value
+                  </Text>
+                  {appliedData.compOffData.some(d => d.claimed_amount > 0) && (
+                    <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>
+                  )}
+                </View>
+                {appliedData.compOffData.map(compOff => (
+                  <View key={compOff.id || compOff._id} style={styles.tableRow}>
                     <Text style={[styles.tableCell, { flex: 1 }]}>
                       {new Date(compOff.date).toLocaleDateString()}
                     </Text>
                     <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {compOff.dayValue || compOff.dayType || "N/A"}
+                      {compOff.dayValue || compOff.dayType || 'N/A'}
                     </Text>
                     {appliedData.compOffData.some(
-                      
-                      (d) => d.claimed_amount > 0
-                    ) && <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {compOff.claimed_amount ?? 0}
-                    </Text>}
+                      d => d.claimed_amount > 0,
+                    ) && (
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {compOff.claimed_amount ?? 0}
+                      </Text>
+                    )}
                   </View>
                 ))}
-                 <Text style={styles.label}>Reason</Text>
-            <Text style={styles.reasonBox}>{appliedData.reason || 'N/A'}</Text>
+                <Text style={styles.label}>Reason</Text>
+                <Text style={styles.reasonBox}>
+                  {appliedData.reason || 'N/A'}
+                </Text>
+              </View>
+            )}
 
+            {/* Apply CompOff Data */}
+            {isApplyCompOff && appliedData?.compOffData?.length > 0 && (
+              <View>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Credit Value
+                  </Text>
+                  {appliedData.compOffData.some(d => d.claimed_amount > 0) && (
+                    <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>
+                  )}
                 </View>
-              )}
- {isApplyCompOff && appliedData?.compOffData?.length > 0 && (
-                <View>
-                  <View style={styles.tableHeader}>
-                     <Text style={[styles.tableCell, { flex: 1 }]}>Date</Text>
-                     <Text style={[styles.tableCell, { flex: 1 }]}>Credit Value</Text>
-                    {appliedData.compOffData.some(
-                    (d) => d.claimed_amount > 0
-                  ) && <Text style={[styles.tableCell, { flex: 1 }]}>Claimed</Text>}
-                  </View>
-                 {appliedData.compOffData.map((compOff) => (
-                   <View key={compOff.id} style={{ flexDirection: 'column', flex: 1 }}>
-                  <View style={styles.tableRow}>
-                    <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {new Date(compOff.date).toLocaleDateString()}
-                    </Text>
-                    <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {compOff.dayValue || compOff.dayType || "N/A"}
-                    </Text>
-                    {appliedData.compOffData.some(
-                      (d) => d.claimed_amount > 0
-                    ) && <Text style={[styles.tableCell, { flex: 1 }]}>
-                      {compOff.claimed_amount ?? 0}
-                    </Text>}
+                {appliedData.compOffData.map(compOff => (
+                  <View
+                    key={compOff.id || compOff._id}
+                    style={{ flexDirection: 'column', flex: 1 }}
+                  >
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {new Date(compOff.date).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {compOff.dayValue || compOff.dayType || 'N/A'}
+                      </Text>
+                      {appliedData.compOffData.some(
+                        d => d.claimed_amount > 0,
+                      ) && (
+                        <Text style={[styles.tableCell, { flex: 1 }]}>
+                          {compOff.claimed_amount ?? 0}
+                        </Text>
+                      )}
                     </View>
-                <Text style={styles.label}>Reason: {compOff.reason || 'N/A'}</Text>
-              </View>
-                  
+                    <Text style={styles.label}>
+                      Reason: {compOff.reason || 'N/A'}
+                    </Text>
+                  </View>
                 ))}
+              </View>
+            )}
+
+            {/* Regularization Data */}
+            {isRegularization && appliedData?.regulariseData?.length > 0 && (
+              <View>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Applied On
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    Submitted On
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 0, width: 40 }]}>
+                    In/
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 0, width: 40 }]}>
+                    Out
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>Hrs</Text>
                 </View>
-              )}
 
-              {isRegularization && appliedData?.regulariseData?.length > 0 && (
-        <View>
-          <View style={styles.tableHeader}>
-            {/* <Text style={[styles.tableCell, { flex: 1 }]}>Type</Text> */}
-            <Text style={[styles.tableCell, { flex: 1 }]}>Applied On</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>Submitted On</Text>
-            <Text style={[styles.tableCell, { flex: 0 }]}>In/</Text>
-            <Text style={[styles.tableCell, { flex: 0 }]}>Out</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>Working Hrs</Text>
-          </View>
-            
-         
-            {appliedData.regulariseData.map((item) => (
-            <View key={item.id} style={{ flexDirection: 'column', flex: 1 }}>
-              <View style={styles.tableRow}>
-                {/* <Text style={[styles.tableCell, { flex: 1 }]}>
-                  {appliedData.request_type}
-                </Text> */}
-               
-                <Text style={[styles.tableCell, { flex: 1 }]}>
-                  {new Date(appliedData.raised_on).toLocaleDateString()}
-                </Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>
-                  {new Date(item.date).toLocaleDateString()}
-                </Text>
-                <Text style={[styles.tableCell, { flex: 0 }]}>
-                  {item.punch_in_time || "N/A"}/
-                </Text>
-                <Text style={[styles.tableCell, { flex: 0 }]}>
-                  {item.punch_out_time || "N/A"}
-                </Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>
-                  {item.working_hours || "N/A"}
-                </Text>
+                {appliedData.regulariseData.map(item => (
+                  <View
+                    key={item.id || item._id}
+                    style={{ flexDirection: 'column', flex: 1 }}
+                  >
+                    <View style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {new Date(appliedData.raised_on).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {new Date(item.date).toLocaleDateString()}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 0, width: 40 }]}>
+                        {item.punch_in_time || 'N/A'}/
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 0, width: 40 }]}>
+                        {item.punch_out_time || 'N/A'}
+                      </Text>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>
+                        {item.working_hours || 'N/A'}
+                      </Text>
+                    </View>
+                    <Text style={styles.labe}>
+                      Reason: {item.reason || 'N/A'}
+                    </Text>
+                  </View>
+                ))}
               </View>
-                <Text style={styles.labe}>Reason:{item.reason || 'N/A'}</Text>
-              </View>
-              
-            ))}
-         
-         {/* {appliedData.regulariseData.map((it,index)=>(
-          <View key={index}>
-          <Text style={styles.label}>Reason</Text>
-            <Text style={styles.reasonBox}>{it.reason || 'N/A'}</Text>
-            </View>
-         ))} */}
-         </View>
-       
-      )}
-       
-            {/* Reason */}
-             
-           
-            {/* Remark Input */}
-            {!sectionTitle&&(
-            <View>
-            <Text style={styles.label}>Remark</Text>
-            <TextInput
-              placeholder="Enter your remark"
-              style={styles.input}
-              value={remark}
-              onChangeText={setRemark}
-              // underlineColorAndroid="transparent"
-            />
+            )}
 
-            {/* Buttons */}
-            {/* <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.approveBtn}
-                onPress={() => handleAction('approve')}
-              >
-                <Text style={styles.btnText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.rejectBtn}
-                onPress={() => handleAction('reject')}
-              >
-                <Text style={styles.btnText}>Reject</Text>
-              </TouchableOpacity>
-            </View> */}
-            <View style={styles.buttonRow}>
+            {/* Remark Input (Only show if pending and not viewing 'MyRequest') */}
+            {!sectionTitle && !appliedData.completed_or_not && (
+              <View style={{ marginTop: 20 }}>
+                <Text style={styles.label}>Remark</Text>
+                <TextInput
+                  placeholder="Enter your remark"
+                  style={styles.input}
+                  value={remark}
+                  onChangeText={setRemark}
+                />
+              </View>
+            )}
+          </ScrollView>
+
+          {/* 2. FIXED FOOTER AREA (Only show buttons if pending and not viewing 'MyRequest') */}
+          {!sectionTitle && !appliedData.completed_or_not && (
+            <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.approveBtn, submitting && { opacity: 0.6 }]}
                 onPress={() => handleAction('approve')}
@@ -378,14 +390,11 @@ const isApplyCompOff = requestType === "apply_CompOff";
                 </Text>
               </TouchableOpacity>
             </View>
-            </View>
-             )}
-          </ScrollView>
+          )}
         </Pressable>
       </Pressable>
-           
 
-      {/* 🔹 Global Popup (always centered, above everything) */}
+      {/* Global Popup */}
       {popupVisible && (
         <Modal transparent animationType="fade" visible={popupVisible}>
           <View style={styles.popupOverlay}>
@@ -404,7 +413,7 @@ const isApplyCompOff = requestType === "apply_CompOff";
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -412,8 +421,22 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    maxHeight: '85%',
+    maxHeight: '85%', // Ensures modal never overflows the screen
+    overflow: 'hidden', // Keeps children inside the rounded box
+  },
+  scrollArea: {
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 10,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   closeBtn: {
     position: 'absolute',
@@ -431,6 +454,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2e6b4e',
     textAlign: 'center',
+    marginTop: 16,
     marginBottom: 12,
   },
   rowBetween: {
@@ -486,9 +510,10 @@ const styles = StyleSheet.create({
     color: '#0e120eb5',
     fontWeight: '500',
   },
-  labe:{
+  labe: {
     fontSize: 12,
     color: '#474a47f0',
+    marginVertical: 4,
   },
   reasonBox: {
     borderWidth: 1,
@@ -506,12 +531,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 10,
     fontSize: 13,
-    marginBottom: 20,
+    marginBottom: 10,
     color: '#0e120ef0',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   approveBtn: {
     flex: 1,

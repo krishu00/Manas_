@@ -94,9 +94,18 @@
 // export default Dashboard;
 
 // Dashboard.js
-import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  createContext,
+  useContext,
+} from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  useBottomTabBarHeight,
+} from '@react-navigation/bottom-tabs';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useNavigationState } from '@react-navigation/native';
 import Header from './Header/Header';
@@ -119,12 +128,12 @@ export const TabNavigationContext = createContext(null);
 // Helper component that captures the proper TabNavigator navigation
 const HomeScreenWrapper = ({ setTabNavigation }) => {
   const navigation = useNavigation();
-  
+
   useEffect(() => {
     console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
     setTabNavigation(navigation);
   }, []);
-  
+
   return <HomeScreen />;
 };
 
@@ -132,10 +141,10 @@ const Dashboard = ({ onLogoutSuccess }) => {
   const [closeDropdownFlag, setCloseDropdownFlag] = useState(false);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [tabNavigation, setTabNavigation] = useState(null);
-  
+
   const navigation = useNavigation();
   const currentTabIndex = useNavigationState(state => state.index);
-  
+
   const handleOutsidePress = () => {
     setCloseDropdownFlag(true);
   };
@@ -171,14 +180,16 @@ const Dashboard = ({ onLogoutSuccess }) => {
   const insets = useSafeAreaInsets();
 
   return (
-     <View style={{ flex: 1 }}>
-       {dropdownVisible && (
-         <TouchableWithoutFeedback onPress={handleOutsidePress}>
-           <View style={styles.globalOverlay} />
-         </TouchableWithoutFeedback>
-       )}
-       <TabNavigationContext.Provider value={{ navigation: tabNavigation, setNavigation: setTabNavigation }}>
-         <View style={styles.container}>
+    <View style={{ flex: 1 }}>
+      {dropdownVisible && (
+        <TouchableWithoutFeedback onPress={handleOutsidePress}>
+          <View style={styles.globalOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+      <TabNavigationContext.Provider
+        value={{ navigation: tabNavigation, setNavigation: setTabNavigation }}
+      >
+        <View style={styles.container}>
           <View style={styles.headerWrapper}>
             <Header
               onLogoutSuccess={onLogoutSuccess}
@@ -189,7 +200,7 @@ const Dashboard = ({ onLogoutSuccess }) => {
               onDropdownVisibleChange={setDropdownVisible}
             />
           </View>
-         
+
           <View style={styles.tabsWrapper}>
             <Tab.Navigator
               screenOptions={({ route }) => ({
@@ -204,13 +215,12 @@ const Dashboard = ({ onLogoutSuccess }) => {
                     case 'Request':
                       iconName = 'envelope';
                       break;
-                    case 'Trips':
-                      iconName = 'location-arrow';
-                      break;
+                    // case 'Trips':
+                    //   iconName = 'location-arrow';
+                    //   break;
                     case 'UserProfile':
                       iconName = 'user';
                       break;
-                  
                   }
 
                   const color = focused ? '#6a9689' : 'darkgray';
@@ -228,7 +238,12 @@ const Dashboard = ({ onLogoutSuccess }) => {
               })}
             >
               <Tab.Screen name="Home">
-                {props => <HomeScreenWrapper {...props} setTabNavigation={setTabNavigation} />}
+                {props => (
+                  <HomeScreenWrapper
+                    {...props}
+                    setTabNavigation={setTabNavigation}
+                  />
+                )}
               </Tab.Screen>
               <Tab.Screen
                 name="Request"
@@ -238,32 +253,27 @@ const Dashboard = ({ onLogoutSuccess }) => {
                   defaultTab: 'My Requests',
                 }}
               />
-              <Tab.Screen
+              {/* <Tab.Screen
                 name="Trips"
                 component={TripScreen}
-              />
-              <Tab.Screen
-                name="UserProfile"
-                component={UserDetailsScreen}
-              />
+              /> */}
+              <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
               {/* Salary screen kept but hidden from tab bar */}
               <Tab.Screen
-  name="Salary"
-  component={MyPayslip}
-  options={{
-    headerShown: false,
-    tabBarItemStyle: { display: "none" }, // ✅ IMPORTANT
-  }}
-/>
-              
+                name="Salary"
+                component={MyPayslip}
+                options={{
+                  headerShown: false,
+                  tabBarItemStyle: { display: 'none' }, // ✅ IMPORTANT
+                }}
+              />
             </Tab.Navigator>
           </View>
-          
         </View>
-        
+
         {/* Hidden Salary Screen */}
       </TabNavigationContext.Provider>
-  </View>
+    </View>
   );
 };
 
@@ -271,7 +281,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-   headerWrapper: {
+  headerWrapper: {
     position: 'absolute',
     top: 0,
     left: 0,
