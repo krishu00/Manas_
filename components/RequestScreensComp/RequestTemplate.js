@@ -80,8 +80,13 @@ const RequestTemplate = ({
     if (submitting) return;
     setSubmitting(true);
     try {
-      if (!remark.trim()) {
-        showPopup('Validation', 'Please enter a remark before proceeding.');
+      // if (!remark.trim()) {
+      //   showPopup('Validation', 'Please enter a remark before proceeding.');
+      //   return;
+      // }
+// ✅ 1. REMARK LOGIC: Only block if the action is 'reject'
+      if (action === 'reject' && !remark.trim()) {
+        showPopup('Validation', 'Please enter a remark before rejecting.');
         return;
       }
 
@@ -102,7 +107,8 @@ const RequestTemplate = ({
       );
 
       showPopup('Success', `Request ${action}d successfully!`, () => {
-        refreshData?.();
+        // refreshData?.();
+        refreshData?.(action);
         onClose();
       });
     } catch (error) {

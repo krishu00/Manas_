@@ -86,6 +86,26 @@ const Approvals = ({
     fetchApprovals();
   }, []);
 
+  // ✅ 3. Optimistic Update Function
+  const handleRefreshData = (action) => {
+    // Instantly update the list locally so the user sees the change immediately
+    if (selectedRequest) {
+      setApprovals(prevApprovals =>
+        prevApprovals.map(item =>
+          item._id === selectedRequest._id
+            ? { 
+                ...item, 
+                completed_or_not: true, 
+                isApproved: action === 'approve' 
+              }
+            : item
+        )
+      );
+    }
+    // Still fetch fresh data in the background to ensure sync
+    fetchApprovals();
+  };
+
   const renderHeader = () => (
     <View style={[styles.row, styles.headerRow]}>
       <Text style={[styles.cell, styles.sn]}>S.No</Text>
@@ -166,7 +186,7 @@ const Approvals = ({
             />
             
           </View>
-        </ScrollView>
+        </ScrollView>  
       )}
 
       {selectedRequest && (
@@ -174,7 +194,8 @@ const Approvals = ({
           visible={!!selectedRequest}
           appliedData={selectedRequest}
           onClose={() => setSelectedRequest(null)}
-          refreshData={fetchApprovals}
+          // refreshData={fetchApprovals}
+          refreshData={handleRefreshData}
         />
       )}
 
