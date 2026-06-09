@@ -15,7 +15,10 @@ import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import { MMKV } from 'react-native-mmkv';
-import { getLeaveTypeAbbreviation, getRequestTypeLabel } from '../../src/utils/utils';
+import {
+  getLeaveTypeAbbreviation,
+  getRequestTypeLabel,
+} from '../../src/utils/utils';
 
 const storage = new MMKV();
 
@@ -204,20 +207,24 @@ const TimerCalender = ({ refreshFlag }) => {
     });
 
     // requests (override/augment)
+    // requests (override/augment)
     (requestsArr || []).forEach(r => {
-      // many request types have start_date/end_date OR arrays like compOffData/regulariseData
       const markDate = ds => {
         if (!ds) return;
+
         const d = moment(ds);
         if (!d.isValid()) return;
+
         const key = d.format('YYYY-MM-DD');
-        const approved = r.isApproved=== true && r.completed_or_not === true;
+
+        const approved = r.isApproved === true && r.completed_or_not === true;
+
         const rejected = r.isApproved === false && r.completed_or_not === true;
+
         const pending = r.completed_or_not === false;
-        
-        // Get abbreviated label based on request type
+
         const requestLabel = getRequestTypeLabel(r);
-        
+
         merged[key] = {
           label: requestLabel,
           source: 'request',
@@ -226,41 +233,69 @@ const TimerCalender = ({ refreshFlag }) => {
           status: approved ? 'approved' : rejected ? 'rejected' : 'pending',
           requestData: r,
           customStyles: {
-            container: approved ? styles.requestApprovedContainer : rejected ? styles.requestRejectedContainer : styles.requestPendingContainer,
-            text: { color: approved ? '#34a612' : '#000' },
+            container: approved
+              ? styles.requestApprovedContainer
+              : rejected
+              ? styles.requestRejectedContainer
+              : styles.requestPendingContainer,
+            text: {
+              color: approved ? '#34a612' : '#000',
+            },
           },
         };
       };
 
-      // range (start_date - end_date)
+      // ==================================================
+      // Regularization (multiple dates support)
+      // ==================================================
+      if (
+        r.request_type === 'Regularise Attendance' &&
+        Array.isArray(r.regulariseData) &&
+        r.regulariseData.length > 0
+      ) {
+        r.regulariseData.forEach(rd => {
+          markDate(rd.date || rd);
+        });
+
+        return;
+      }
+
+      // ==================================================
+      // Comp Off
+      // ==================================================
+      if (Array.isArray(r.compOffData) && r.compOffData.length > 0) {
+        r.compOffData.forEach(cd => {
+          markDate(cd.date || cd);
+        });
+
+        return;
+      }
+
+      // ==================================================
+      // Leave / WFH / On Duty / Resignation etc.
+      // ==================================================
       if (r.start_date && r.end_date) {
         const start = moment(r.start_date);
         const end = moment(r.end_date);
+
         if (start.isValid() && end.isValid()) {
           for (let m = start.clone(); m.isSameOrBefore(end); m.add(1, 'day')) {
             markDate(m.format('YYYY-MM-DD'));
           }
-          return; // handled
+
+          return;
         }
       }
 
-      // compOffData dates
-      if (Array.isArray(r.compOffData) && r.compOffData.length > 0) {
-        r.compOffData.forEach(cd => markDate(cd.date || cd));
-        return;
+      // ==================================================
+      // Fallback
+      // ==================================================
+      if (r.start_date) {
+        markDate(r.start_date);
+      } else if (r.raised_on) {
+        markDate(r.raised_on);
       }
-
-      // regulariseData dates
-      if (Array.isArray(r.regulariseData) && r.regulariseData.length > 0) {
-        r.regulariseData.forEach(rd => markDate(rd.date || rd));
-        return;
-      }
-
-      // fallback: start_date or raised_on
-      if (r.start_date) markDate(r.start_date);
-      else if (r.raised_on) markDate(r.raised_on);
     });
-
     return merged;
   };
 
@@ -381,8 +416,9 @@ const TimerCalender = ({ refreshFlag }) => {
               ? '#FF9800'
               : m?.source === 'request'
               ? m?.status === 'approved'
-                ? '#56a214': m?.status === 'rejected'
-                ? '#ff3e3b' 
+                ? '#56a214'
+                : m?.status === 'rejected'
+                ? '#ff3e3b'
                 : '#f0d24de1'
               : m?.label
               ? getTimeColor(m.label)
@@ -428,7 +464,10 @@ const TimerCalender = ({ refreshFlag }) => {
         onRequestClose={closeModal}
       >
         <Pressable style={styles.modalContainer} onPress={closeModal}>
-          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+          <Pressable
+            style={styles.modalContent}
+            onPress={e => e.stopPropagation()}
+          >
             <Text style={styles.modalText}>
               Date: <Text style={styles.modalDate}>{selectedDate}</Text>
             </Text>
@@ -452,36 +491,44 @@ const TimerCalender = ({ refreshFlag }) => {
                       <Text style={[styles.infoText, { marginBottom: 12 }]}>
                         {markedDates[selectedDate]?.requestType}
                       </Text>
-                      
+
                       {markedDates[selectedDate]?.requestData?.leave_type && (
                         <View style={styles.requestDetailRow}>
                           <Text style={styles.detailLabel}>Leave Type:</Text>
                           <Text style={styles.detailValue}>
-                            {markedDates[selectedDate]?.requestData.leave_type} ({getLeaveTypeAbbreviation(markedDates[selectedDate]?.requestData.leave_type)})
+                            {markedDates[selectedDate]?.requestData.leave_type}{' '}
+                            (
+                            {getLeaveTypeAbbreviation(
+                              markedDates[selectedDate]?.requestData.leave_type,
+                            )}
+                            )
                           </Text>
                         </View>
                       )}
 
-                      {
-                        markedDates[selectedDate]?.requestData?.raised_on != null &&(
-                           <View style={styles.requestDetailRow}>
+                      {markedDates[selectedDate]?.requestData?.raised_on !=
+                        null && (
+                        <View style={styles.requestDetailRow}>
                           <Text style={styles.detailLabel}>Applied On:</Text>
                           <Text style={styles.detailValue}>
                             {markedDates[selectedDate]?.requestData.raised_on}
                           </Text>
                         </View>
-                        )}
-                      
-                      
-                      {markedDates[selectedDate]?.requestData?.number_of_days != null && (
+                      )}
+
+                      {markedDates[selectedDate]?.requestData?.number_of_days !=
+                        null && (
                         <View style={styles.requestDetailRow}>
                           <Text style={styles.detailLabel}>Days:</Text>
                           <Text style={styles.detailValue}>
-                            {markedDates[selectedDate]?.requestData.number_of_days}
+                            {
+                              markedDates[selectedDate]?.requestData
+                                .number_of_days
+                            }
                           </Text>
                         </View>
                       )}
-                      
+
                       {markedDates[selectedDate]?.requestData?.reason && (
                         <View style={styles.requestDetailRow}>
                           <Text style={styles.detailLabel}>Reason:</Text>
@@ -490,30 +537,86 @@ const TimerCalender = ({ refreshFlag }) => {
                           </Text>
                         </View>
                       )}
-                      
-                      {markedDates[selectedDate]?.requestData?.regulariseData && markedDates[selectedDate]?.requestData?.regulariseData?.length > 0 && (
-                        <View style={styles.regularizationContainer}>
-                          <Text style={[styles.detailLabel, { marginBottom: 8, marginTop: 8 }]}>Working Hours:</Text>
-                          {markedDates[selectedDate]?.requestData?.regulariseData.filter(item => {
-                            const itemDate = item?.date || item;
-                            const formatted = moment(itemDate).isValid() ? moment(itemDate).format('YYYY-MM-DD') : itemDate;
-                            return formatted === selectedDate;
-                          })?.map((item, idx) => (
-                            <View key={idx} style={[styles.regularizationRow, markedDates[selectedDate]?.requestData?.completed_or_not && styles.regularizationApproved]}>
-                              <Text style={styles.regularizationText}>
-                                {item.punch_in_time} - {item.punch_out_time}
-                              </Text>
-                              <Text style={[styles.regularizationHours, markedDates[selectedDate]?.requestData?.completed_or_not && styles.regularizationHoursApproved]}>
-                                {item.working_hours}
-                              </Text>
-                            </View>
-                          )) /* to apply approved style if any one entry is approved */}
-                        </View>
-                      )}
-                      
-                      <View style={[styles.requestStatusRow, markedDates[selectedDate]?.status === 'approved' ? styles.statusApproved : markedDates[selectedDate]?.status === 'rejected' ? styles.statusRejected : styles.statusPending]}>
-                        <Text style={[styles.statusText, markedDates[selectedDate]?.status === 'approved' ? styles.statusTextApproved  : markedDates[selectedDate]?.status === 'rejected' ? styles.statusTextRejected : styles.statusTextPending]}>
-                          Status: {(markedDates[selectedDate])?.status === 'approved' ? 'Approved ✓' : (markedDates[selectedDate])?.status === 'rejected' ? 'Rejected ✗' : 'Pending'}
+
+                      {markedDates[selectedDate]?.requestData?.regulariseData &&
+                        markedDates[selectedDate]?.requestData?.regulariseData
+                          ?.length > 0 && (
+                          <View style={styles.regularizationContainer}>
+                            <Text
+                              style={[
+                                styles.detailLabel,
+                                { marginBottom: 8, marginTop: 8 },
+                              ]}
+                            >
+                              Working Hours:
+                            </Text>
+                            {
+                              markedDates[
+                                selectedDate
+                              ]?.requestData?.regulariseData
+                                .filter(item => {
+                                  const itemDate = item?.date || item;
+                                  const formatted = moment(itemDate).isValid()
+                                    ? moment(itemDate).format('YYYY-MM-DD')
+                                    : itemDate;
+                                  return formatted === selectedDate;
+                                })
+                                ?.map((item, idx) => (
+                                  <View
+                                    key={idx}
+                                    style={[
+                                      styles.regularizationRow,
+                                      markedDates[selectedDate]?.requestData
+                                        ?.completed_or_not &&
+                                        styles.regularizationApproved,
+                                    ]}
+                                  >
+                                    <Text style={styles.regularizationText}>
+                                      {item.punch_in_time} -{' '}
+                                      {item.punch_out_time}
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        styles.regularizationHours,
+                                        markedDates[selectedDate]?.requestData
+                                          ?.completed_or_not &&
+                                          styles.regularizationHoursApproved,
+                                      ]}
+                                    >
+                                      {item.working_hours}
+                                    </Text>
+                                  </View>
+                                )) /* to apply approved style if any one entry is approved */
+                            }
+                          </View>
+                        )}
+
+                      <View
+                        style={[
+                          styles.requestStatusRow,
+                          markedDates[selectedDate]?.status === 'approved'
+                            ? styles.statusApproved
+                            : markedDates[selectedDate]?.status === 'rejected'
+                            ? styles.statusRejected
+                            : styles.statusPending,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusText,
+                            markedDates[selectedDate]?.status === 'approved'
+                              ? styles.statusTextApproved
+                              : markedDates[selectedDate]?.status === 'rejected'
+                              ? styles.statusTextRejected
+                              : styles.statusTextPending,
+                          ]}
+                        >
+                          Status:{' '}
+                          {markedDates[selectedDate]?.status === 'approved'
+                            ? 'Approved ✓'
+                            : markedDates[selectedDate]?.status === 'rejected'
+                            ? 'Rejected ✗'
+                            : 'Pending'}
                         </Text>
                       </View>
                     </View>

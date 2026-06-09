@@ -26,47 +26,46 @@ const Approvals = ({
   const [errorPopup, setErrorPopup] = useState(null);
   const [refreshing, setRefreshing] = useState(false); // ✅ pull-to-refresh state
 
- const fetchApprovals = async () => {
-  setLoading(true);
-  try {
-    const response = await apiMiddleware.get('/request/get_requested_to_me');
-    let data = response.data?.data || [];
+  const fetchApprovals = async () => {
+    setLoading(true);
+    try {
+      const response = await apiMiddleware.get('/request/get_requested_to_me');
+      let data = response.data?.data || [];
 
-    // Apply filters
-    if (requestType && requestType !== 'All Requests') {
-      data = data.filter(item => item.request_type === requestType);
-    }
-    if (requestStatus && requestStatus !== 'All status') {
-      data = data.filter(item =>
-        requestStatus === 'Approved'
-          ? item.completed_or_not
-          : !item.completed_or_not,
-      );
-    }
-
-    setApprovals(data);
-
-    // 🔹 Open RequestTemplate if notification requestId exists
-    if (selectedRequestId) {
-      const req = data.find(r => r._id === selectedRequestId);
-      if (req) {
-        setSelectedRequest(req);
-      } else {
-        console.warn('Request not found in approvals:', selectedRequestId);
+      // Apply filters
+      if (requestType && requestType !== 'All Requests') {
+        data = data.filter(item => item.request_type === requestType);
       }
-    }
-  } catch (error) {
-    console.error('Error fetching approvals:', error);
-    setErrorPopup({
-      title: 'Error',
-      message: 'Failed to fetch approvals. Please try again.',
-    });
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
+      if (requestStatus && requestStatus !== 'All status') {
+        data = data.filter(item =>
+          requestStatus === 'Approved'
+            ? item.completed_or_not
+            : !item.completed_or_not,
+        );
+      }
 
+      setApprovals(data);
+
+      // 🔹 Open RequestTemplate if notification requestId exists
+      if (selectedRequestId) {
+        const req = data.find(r => r._id === selectedRequestId);
+        if (req) {
+          setSelectedRequest(req);
+        } else {
+          console.warn('Request not found in approvals:', selectedRequestId);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching approvals:', error);
+      setErrorPopup({
+        title: 'Error',
+        message: 'Failed to fetch approvals. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetchApprovals();
@@ -87,19 +86,19 @@ const Approvals = ({
   }, []);
 
   // ✅ 3. Optimistic Update Function
-  const handleRefreshData = (action) => {
+  const handleRefreshData = action => {
     // Instantly update the list locally so the user sees the change immediately
     if (selectedRequest) {
       setApprovals(prevApprovals =>
         prevApprovals.map(item =>
           item._id === selectedRequest._id
-            ? { 
-                ...item, 
-                completed_or_not: true, 
-                isApproved: action === 'approve' 
+            ? {
+                ...item,
+                completed_or_not: true,
+                isApproved: action === 'approve',
               }
-            : item
-        )
+            : item,
+        ),
       );
     }
     // Still fetch fresh data in the background to ensure sync
@@ -123,89 +122,94 @@ const Approvals = ({
       : 'N/A';
 
     return (
-        
-        <View
-          style={[
-            styles.row,
-            { backgroundColor: isEvenRow ? '#ffffff' : '#f4f4f4' },
-          ]}
-        >
-          <Text style={[styles.cell, styles.sn]}>{index + 1}</Text>
-          <Text style={[styles.cell, styles.name]} numberOfLines={1}>
-            {item.requestor_name}
-          </Text>
-           <TouchableOpacity onPress={() => setSelectedRequest(item)}>
+      <View
+        style={[
+          styles.row,
+          { backgroundColor: isEvenRow ? '#ffffff' : '#f4f4f4' },
+        ]}
+      >
+        <Text style={[styles.cell, styles.sn]}>{index + 1}</Text>
+        <Text style={[styles.cell, styles.name]} numberOfLines={1}>
+          {item.requestor_name}
+        </Text>
+        <TouchableOpacity onPress={() => setSelectedRequest(item)}>
           <Text
             style={[styles.cell, styles.type, { color: '#d9534f' }]}
             numberOfLines={1}
           >
             {item.request_type}
           </Text>
-          </TouchableOpacity>
-          <Text style={[styles.cell, styles.date]} numberOfLines={1}>
-            {appliedDate}
-          </Text>
-          <Text
-            style={[
-              styles.cell,
-              styles.status,
-               item.completed_or_not ? item.isApproved === true ? styles.approved : styles.rejected : styles.pending,
-            ]}
-          >
-            {item.completed_or_not ? item.isApproved === true ? 'Approved' : 'Rejected' : 'Pending'}
-          </Text>
-        </View>
-    
+        </TouchableOpacity>
+        <Text style={[styles.cell, styles.date]} numberOfLines={1}>
+          {appliedDate}
+        </Text>
+        <Text
+          style={[
+            styles.cell,
+            styles.status,
+            item.completed_or_not
+              ? item.isApproved === true
+                ? styles.approved
+                : styles.rejected
+              : styles.pending,
+          ]}
+        >
+          {item.completed_or_not
+            ? item.isApproved === true
+              ? 'Approved'
+              : 'Rejected'
+            : 'Pending'}
+        </Text>
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity activeOpacity={1} >
-      {loading ? (
-        <ActivityIndicator size="large" color="#6a9689" />
-      ) : approvals.length === 0 ? (
-        <Text style={styles.emptyText}>No Approvals Found</Text>
-      ) : (
-        <ScrollView horizontal>
-          <View>
-            {renderHeader()}
-            <FlatList
-              data={[...approvals].reverse()}
-              renderItem={renderItem}
-              keyExtractor={item => item._id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 80 }}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={['#6a9689']}
-                />
-              }
-            />
-            
-          </View>
-        </ScrollView>  
-      )}
+      <TouchableOpacity activeOpacity={1}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#6a9689" />
+        ) : approvals.length === 0 ? (
+          <Text style={styles.emptyText}>No Approvals Found</Text>
+        ) : (
+          <ScrollView horizontal>
+            <View>
+              {renderHeader()}
+              <FlatList
+                data={[...approvals].reverse()}
+                renderItem={renderItem}
+                keyExtractor={item => item._id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 80 }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={['#6a9689']}
+                  />
+                }
+              />
+            </View>
+          </ScrollView>
+        )}
 
-      {selectedRequest && (
-        <RequestTemplate
-          visible={!!selectedRequest}
-          appliedData={selectedRequest}
-          onClose={() => setSelectedRequest(null)}
-          // refreshData={fetchApprovals}
-          refreshData={handleRefreshData}
-        />
-      )}
+        {selectedRequest && (
+          <RequestTemplate
+            visible={!!selectedRequest}
+            appliedData={selectedRequest}
+            onClose={() => setSelectedRequest(null)}
+            // refreshData={fetchApprovals}
+            refreshData={handleRefreshData}
+          />
+        )}
 
-      {errorPopup && (
-        <Popup
-          title={errorPopup.title}
-          message={errorPopup.message}
-          onClose={() => setErrorPopup(null)}
-        />
-      )}
+        {errorPopup && (
+          <Popup
+            title={errorPopup.title}
+            message={errorPopup.message}
+            onClose={() => setErrorPopup(null)}
+          />
+        )}
       </TouchableOpacity>
     </View>
   );

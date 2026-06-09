@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import dayjs from 'dayjs';
+import { AppState } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,6 +27,8 @@ const TICK_INTERVAL = 1000;
 export default class ClockInOut extends React.Component {
   constructor(props) {
     super(props);
+    this.appState = AppState.currentState;
+
     this.state = {
       currentTime: dayjs(),
       elapsedSeconds: 0,
@@ -50,11 +53,28 @@ export default class ClockInOut extends React.Component {
 
   componentDidMount() {
     this._ticker = setInterval(this.updateClock, TICK_INTERVAL);
-    this.checkPunchStatus(dayjs().format('YYYY-MM-DD'));
-  }
 
+    this.checkPunchStatus(dayjs().format('YYYY-MM-DD'));
+
+    this.subscription = AppState.addEventListener(
+      'change',
+      this.handleAppStateChange,
+    );
+  }
+  componentDidUpdate(prevProps) {
+    if (
+      prevProps.refreshFlag !== this.props.refreshFlag &&
+      !this.state.loading
+    ) {
+      this.checkPunchStatus(dayjs().format('YYYY-MM-DD'));
+    }
+  }
   componentWillUnmount() {
     clearInterval(this._ticker);
+
+    if (this.subscription) {
+      this.subscription.remove();
+    }
   }
   showPopup = (title, message) => {
     this.setState({
@@ -62,6 +82,19 @@ export default class ClockInOut extends React.Component {
       popupTitle: title,
       popupMessage: message,
     });
+  };
+
+  handleAppStateChange = nextAppState => {
+    if (
+      this.appState.match(/inactive|background/) &&
+      nextAppState === 'active'
+    ) {
+      console.log('App resumed');
+
+      this.checkPunchStatus(dayjs().format('YYYY-MM-DD'));
+    }
+
+    this.appState = nextAppState;
   };
 
   hidePopup = () => {
@@ -331,49 +364,49 @@ export default class ClockInOut extends React.Component {
 
     return (
       <>
-      <TouchableOpacity activeOpacity={1}>
-        <View style={styles.container}>
-          <StatusBar hidden={true} />
-          <View style={styles.clockContainer}>
-            <View style={[styles.bigQuadran]} />
-            <View style={[styles.mediumQuadran]} />
-            <Animated.View style={[styles.mover, transformHours]}>
-              <View style={[styles.hours]} />
-            </Animated.View>
-            <Animated.View style={[styles.mover, transformMinutes]}>
-              <View style={[styles.minutes]} />
-            </Animated.View>
-            <Animated.View style={[styles.mover, transformSeconds]}>
-              <View style={[styles.seconds]} />
-            </Animated.View>
-            <View style={[styles.smallQuadran]} />
-          </View>
+        <TouchableOpacity activeOpacity={1}>
+          <View style={styles.container}>
+            <StatusBar hidden={true} />
+            <View style={styles.clockContainer}>
+              <View style={[styles.bigQuadran]} />
+              <View style={[styles.mediumQuadran]} />
+              <Animated.View style={[styles.mover, transformHours]}>
+                <View style={[styles.hours]} />
+              </Animated.View>
+              <Animated.View style={[styles.mover, transformMinutes]}>
+                <View style={[styles.minutes]} />
+              </Animated.View>
+              <Animated.View style={[styles.mover, transformSeconds]}>
+                <View style={[styles.seconds]} />
+              </Animated.View>
+              <View style={[styles.smallQuadran]} />
+            </View>
 
-          <View style={styles.infoContainer}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#a8d7c5" />
-            ) : (
-              <>
-                <Text style={styles.currentTime}>
-                  {isPunchedIn ? this.renderStopwatch() : '00:00:00'}
-                </Text>
-
-                <View style={styles.punchSection}>
-                  <Text style={styles.punchIn}>
-                    In Time:{' '}
-                    <Text style={styles.darkerTimeText}>
-                      {punchInTime || '00:00'}
-                    </Text>
+            <View style={styles.infoContainer}>
+              {loading ? (
+                <ActivityIndicator size="large" color="#a8d7c5" />
+              ) : (
+                <>
+                  <Text style={styles.currentTime}>
+                    {isPunchedIn ? this.renderStopwatch() : '00:00:00'}
                   </Text>
-                  <Text style={styles.punchOut}>
-                    Out Time:{' '}
-                    <Text style={styles.darkerTimeText}>
-                      {punchOutTime || '00:00'}
-                    </Text>
-                  </Text>
-                </View>
 
-                {/* <TouchableOpacity
+                  <View style={styles.punchSection}>
+                    <Text style={styles.punchIn}>
+                      In Time:{' '}
+                      <Text style={styles.darkerTimeText}>
+                        {punchInTime || '00:00'}
+                      </Text>
+                    </Text>
+                    <Text style={styles.punchOut}>
+                      Out Time:{' '}
+                      <Text style={styles.darkerTimeText}>
+                        {punchOutTime || '00:00'}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* <TouchableOpacity
                 style={styles.punchButton}
                 onPress={() =>
                   this.getLocationAndPunchInOrOut(
@@ -394,7 +427,7 @@ export default class ClockInOut extends React.Component {
                   {isPunchedIn ? 'Punch Out' : 'Punch In'}
                 </Text>
               </TouchableOpacity> */}
-                {/* <TouchableOpacity
+                  {/* <TouchableOpacity
                   style={styles.punchButton}
                   onPress={() => {
                     if (!isPunchedIn && !punchInTime) {
@@ -419,39 +452,41 @@ export default class ClockInOut extends React.Component {
                     {isPunchedIn ? 'Punch Out Again' : 'Punch In'}
                   </Text>
                 </TouchableOpacity> */}
-                <TouchableOpacity
-                  style={styles.punchButton}
-                  onPress={() =>
-                    this.getLocationAndPunchInOrOut(this.state.nextAction)
-                  }
-                >
-                  <Icon
-                    name={
-                      this.state.nextAction === 'punchOut'
-                        ? 'sign-out'
-                        : 'sign-in'
+                  <TouchableOpacity
+                    style={styles.punchButton}
+                    onPress={() =>
+                      this.getLocationAndPunchInOrOut(this.state.nextAction)
                     }
-                    size={20}
-                    color={
-                      this.state.nextAction === 'punchOut' ? '#F7454A' : '#fff'
-                    }
-                    style={styles.iconStyle}
-                  />
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      this.state.nextAction === 'punchOut'
-                        ? styles.punchInText
-                        : styles.punchOutText,
-                    ]}
                   >
-                    {this.state.buttonLabel}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
+                    <Icon
+                      name={
+                        this.state.nextAction === 'punchOut'
+                          ? 'sign-out'
+                          : 'sign-in'
+                      }
+                      size={20}
+                      color={
+                        this.state.nextAction === 'punchOut'
+                          ? '#F7454A'
+                          : '#fff'
+                      }
+                      style={styles.iconStyle}
+                    />
+                    <Text
+                      style={[
+                        styles.buttonText,
+                        this.state.nextAction === 'punchOut'
+                          ? styles.punchInText
+                          : styles.punchOutText,
+                      ]}
+                    >
+                      {this.state.buttonLabel}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
-        </View>
         </TouchableOpacity>
         {this.state.popupVisible && (
           <Popup

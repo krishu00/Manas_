@@ -87,7 +87,7 @@ const UserDetailsScreen = () => {
   } = employeeData || {};
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={true}
@@ -161,7 +161,13 @@ const UserDetailsScreen = () => {
           { label: 'Role', value: official_details?.role },
           { label: 'Designation', value: official_details?.designation },
           { label: 'Department', value: official_details?.department },
-          { label: 'Manager', value: official_details?.reporting_manager },
+          // { label: 'Manager', value: official_details?.reporting_manager },
+          {
+            label: 'Manager',
+            value: official_details?.reporting_manager?.manager_name
+              ? `${official_details?.reporting_manager?.manager_name} (${official_details?.reporting_manager?.manager_employee_id})`
+              : '-',
+          },
           { label: 'Status', value: official_details?.employee_status },
           { label: 'Leave Template', value: leaveTemplateName || ' ' },
         ]}

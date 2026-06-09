@@ -61,14 +61,6 @@ def enableProguardInReleaseBuilds = false
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
- *
- * For example, to use the international variant, you can use:
- * `def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+`
- *
- * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
- * give correct results when using with locales other than en-US. Note that
- * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
@@ -82,9 +74,12 @@ android {
         applicationId "com.hrms_"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        
+        // ⚠️ ALWAYS INCREMENT THIS BEFORE GENERATING A NEW AAB FOR PLAY STORE 
+        versionCode 34 
+        versionName "2.001"
     }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -92,15 +87,27 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
+            //     storeFile file(MYAPP_UPLOAD_STORE_FILE)
+            //     storePassword MYAPP_UPLOAD_STORE_PASSWORD
+            //     keyAlias MYAPP_UPLOAD_KEY_ALIAS
+            //     keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            // }
+            storeFile file('my-upload-key.keystore')
+        storePassword 'Manas@krishna'
+        keyAlias 'my-key-alias'
+        keyPassword 'Manas@krishna'
+        }
     }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Updated to use the correct release configuration you generated
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -116,17 +123,18 @@ dependencies {
     } else {
         implementation jscFlavor
     }
-   
-
+}
+subprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            // Tells the compiler to ignore deprecation and strict warning blocks as build failures
+            freeCompilerArgs += ["-Xskip-prerelease-check", "-Xallow-unstable-dependencies"]
+            suppressWarnings = true
+        }
+    }
 }
 
 
-
-
-
-
-
-
-// 👇 ADD THIS AT THE VERY BOTTOM
+// 👇 Custom plugins and configurations
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 apply plugin: 'com.google.gms.google-services'

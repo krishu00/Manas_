@@ -17,7 +17,7 @@ const MyPayslip = () => {
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
-
+  const [apiMessage, setApiMessage] = useState('');
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(currentMonth);
   const [payslipResponse, setPayslipResponse] = useState(null);
@@ -39,7 +39,7 @@ const MyPayslip = () => {
     { value: 11, label: 'November' },
     { value: 12, label: 'December' },
   ];
- 
+
   const fetchPayslip = async () => {
     if (!year || !month) {
       alert('Please enter Year and Month');
@@ -56,12 +56,18 @@ const MyPayslip = () => {
 
       if (res.data.success && res.data.count > 0) {
         setPayslipResponse(res.data.data);
+        setApiMessage('');
       } else {
         setPayslipResponse(null);
+        setApiMessage(res.data.message || 'No Payslip found');
       }
     } catch (err) {
-      console.error(err);
       setPayslipResponse(null);
+
+      setApiMessage(
+        err?.response?.data?.message ||
+          'Unable to fetch payslip. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
@@ -116,7 +122,10 @@ const MyPayslip = () => {
         ) : payslipResponse ? (
           <PayslipTemplate payslipResponse={payslipResponse} />
         ) : searched ? (
-          <Text style={styles.noDataText}>No Payslip found</Text>
+          <Text style={styles.noDataText}>
+            {' '}
+            {apiMessage || 'No Payslip found'}
+          </Text>
         ) : null}
       </View>
     </View>
