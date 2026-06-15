@@ -2,6 +2,8 @@ import axios from 'axios';
 import { MMKV } from 'react-native-mmkv';
 import { API_URL } from '@env';
 
+// 👇 1. Create a local instance of MMKV for this file to use
+const storage = new MMKV();
 
 export const apiMiddleware = axios.create({
   baseURL: API_URL,
@@ -11,10 +13,10 @@ export const apiMiddleware = axios.create({
 });
 console.log('API Base URL:??????', API_URL);
 
-
 export const getHeaders = () => {   
-  const employeeId = MMKV.getString('employee_id');
-  const companyCode = MMKV.getString('companyCode');
+  // 👇 2. Change 'MMKV.getString' to 'storage.getString'
+  const employeeId = storage.getString('employee_id');
+  const companyCode = storage.getString('companyCode');
 
   if (!employeeId || !companyCode) throw new Error('Missing credentials');
   return {
