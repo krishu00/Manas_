@@ -37,9 +37,9 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         
-        // Bump version code to 41 to force a fresh Play Console tracking identity
-        versionCode 41 
-        versionName "2.008"
+        // Bump version code to force a fresh Play Console tracking identity
+        versionCode 47
+        versionName "2.014"
 
         externalNativeBuild {
             cmake {
@@ -49,7 +49,7 @@ android {
                 arguments "APP_ALIGN_PAGE_SIZE=true"
             }
         }
-    }
+    }  
 
     signingConfigs {
         debug {
@@ -58,17 +58,11 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-             release {
-            // if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-            //     storeFile file(MYAPP_UPLOAD_STORE_FILE)
-            //     storePassword MYAPP_UPLOAD_STORE_PASSWORD
-            //     keyAlias MYAPP_UPLOAD_KEY_ALIAS
-            //     keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-            // }
+        release {
             storeFile file('my-upload-key.keystore')
-        storePassword 'Manas@krishna'
-        keyAlias 'my-key-alias'
-        keyPassword 'Manas@krishna'
+            storePassword 'Manas@krishna'
+            keyAlias 'my-key-alias'
+            keyPassword 'Manas@krishna'
         }
     }
 
@@ -78,14 +72,17 @@ android {
         }
         release {
             signingConfig signingConfigs.release
-            minifyEnabled enableProguardInReleaseBuilds // Now securely runs with TRUE!
+            minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
-
-    packaging {
+ packaging {
         jniLibs {
+            // Keep this true to allow the compressed binary bypass rule to work
             useLegacyPackaging = true
+        }
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
 }
@@ -108,6 +105,7 @@ subprojects {
         }
     }
 }
-
-apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+// 
+// 💡 Clean out the messy afterEvaluate block completely
+// apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 apply plugin: 'com.google.gms.google-services'
