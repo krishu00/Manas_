@@ -9,14 +9,12 @@ import {
   SafeAreaView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { MMKV } from 'react-native-mmkv';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import logoImage from '../../src/logos/logo-HD.png';
 import Popup from '../Popup/Popup';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import * as Keychain from 'react-native-keychain';
-
-const storage = new MMKV();
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
   const [email, setEmail] = useState('');
@@ -58,9 +56,8 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
     const loadCredentials = async () => {
       try {
         const savedEmails = JSON.parse(
-          storage.getString('savedAccounts') || '[]',
+          (await AsyncStorage.getItem('savedAccounts')) || '[]',
         );
-
         if (savedEmails.length > 0) {
           // Load the last used account by default
           const lastEmail = savedEmails[savedEmails.length - 1];
@@ -167,15 +164,21 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
         console.log('login details from login page ', employee);
 
         if (employee && employee.employee_id && employee.company_code) {
-          storage.set('employee_id', employee.employee_id);
-          storage.set('company_Code', employee.company_code.toString());
-          storage.set('loginTime', Date.now().toString());
-          // ✅ Save FCM token also
+          await AsyncStorage.setItem('employee_id', employee.employee_id);
+
+          await AsyncStorage.setItem(
+            'company_Code',
+            employee.company_code.toString(),
+          );
+
+          await AsyncStorage.setItem('loginTime', Date.now().toString());
+
           if (fcmToken) {
-            storage.set('fcmToken', fcmToken);
+            await AsyncStorage.setItem('fcmToken', fcmToken);
           }
+
           if (token) {
-            storage.set('userToken', token); // ✅ Now works
+            await AsyncStorage.setItem('userToken', token);
           }
 
           // ✅ Save credentials securely if Remember Me checked
@@ -185,16 +188,25 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
               service: `app-${email.trim()}`,
             });
 
-            // Update the list of saved accounts in MMKV
             let savedEmails = JSON.parse(
-              storage.getString('savedAccounts') || '[]',
+              (await AsyncStorage.getItem('savedAccounts')) || '[]',
             );
+
             if (!savedEmails.includes(email.trim())) {
               savedEmails.push(email.trim());
-              storage.set('savedAccounts', JSON.stringify(savedEmails));
+
+              await AsyncStorage.setItem(
+                'savedAccounts',
+                JSON.stringify(savedEmails),
+              );
             }
           }
+          console.log('ASYNC CHECK', await AsyncStorage.getItem('employee_id'));
 
+          console.log(
+            'ASYNC CHECK',
+            await AsyncStorage.getItem('company_Code'),
+          );
           onLoginSuccess(employee.employee_id);
         } else {
           showPopup('Login Failed', 'Employee data missing in response.');

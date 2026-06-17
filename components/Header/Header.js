@@ -9,12 +9,10 @@ import {
   Pressable,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
-
-const storage = new MMKV();
 
 const Header = ({
   onLogoutSuccess,
@@ -47,9 +45,11 @@ const Header = ({
 
   const handleLogout = async () => {
     try {
-      storage.delete('userToken');
+      await AsyncStorage.removeItem('userToken');
+
       setDropdownVisible(false);
       onLogoutSuccess();
+
       showPopup('Success', 'You have been logged out successfully.');
     } catch (error) {
       console.error('Logout error:', error);
@@ -86,8 +86,8 @@ const Header = ({
 
   const UserDetails = async controller => {
     try {
-      const storedEmployeeId = storage.getString('employee_id');
-      const storedCompanyCode = storage.getString('company_Code');
+      const storedEmployeeId = await AsyncStorage.getItem('employee_id');
+      const storedCompanyCode = await AsyncStorage.getItem('company_Code');
 
       if (!storedEmployeeId || !storedCompanyCode) {
         showPopup('Error', 'Unable to retrieve stored data');

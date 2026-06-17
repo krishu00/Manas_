@@ -16,10 +16,8 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
-import { MMKV } from 'react-native-mmkv';
 import Popup from '../Popup/Popup';
 
-const storage = new MMKV();
 const { width } = Dimensions.get('screen');
 const SIZE = width * 0.7;
 const TICK_INTERVAL = 1000;

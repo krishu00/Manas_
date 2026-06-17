@@ -14,13 +14,11 @@ import {
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
-import { MMKV } from 'react-native-mmkv';
 import {
   getLeaveTypeAbbreviation,
   getRequestTypeLabel,
 } from '../../src/utils/utils';
 
-const storage = new MMKV();
 
 // ---------- Helpers ----------
 const ymd = (year, month, day) =>

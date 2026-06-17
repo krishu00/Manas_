@@ -11,6 +11,7 @@ const DisplayTotalLeaves = ({refreshFlag}) => {
     const fetchLeaveBalance = async () => {
       try {
         setLoading(true);
+console.log("apiMiddleware :",apiMiddleware)
         const response = await apiMiddleware.get(
           `/leaves-balance/get-leaves-balance`,
         );

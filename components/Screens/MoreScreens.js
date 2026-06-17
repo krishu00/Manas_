@@ -1,20 +1,19 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';  
+import React, { useState } from 'react';
 import Icon from 'react-native-vector-icons/AntDesign';
 import axios from 'axios';
-import { MMKV } from 'react-native-mmkv';
 import Popup from '../Popup/Popup';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+ 
 const MoreScreen = () => {
-  const storage = new MMKV();
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupData, setPopupData] = useState({ title: '', message: '' });
 
   const sendTestNotification = async () => {
     console.log('clicked');
     try {
-      const loginToken = storage.getString('employee_id'); // ✅ JWT token
-      const fcmToken = storage.getString('fcmToken'); // (optional for debug)
+      const loginToken = await AsyncStorage.getItem('employee_id');
+      const fcmToken = await AsyncStorage.getItem('fcmToken');
 
       console.log('fcm token', fcmToken);
       console.log('loginToken from storage', loginToken);

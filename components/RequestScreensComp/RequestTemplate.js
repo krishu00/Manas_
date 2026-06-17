@@ -55,6 +55,9 @@ const RequestTemplate = ({
     const fetchLeaveBalance = async () => {
       try {
         if (!appliedData?.requestor_id) return;
+        console.log('appliedData.requestor_id :', appliedData.requestor_id);
+        console.log('appliedData :', appliedData);
+
         const response = await apiMiddleware.get(
           `/leaves-balance/get-leaves-balance?employeeId=${appliedData.requestor_id}`,
         );
@@ -63,7 +66,23 @@ const RequestTemplate = ({
           setLeaveBalance(response.data.data);
         }
       } catch (error) {
+        console.log(
+          'Leave balance response:',
+          error?.response?.status,
+          error?.response?.data,
+        );
+
+        // No leave balance assigned yet
+        if (error?.response?.status === 404) {
+          setLeaveBalance({
+            leaveDetails: [],
+          });
+
+          return;
+        }
+
         console.error('Error fetching leave balance:', error);
+
         showPopup(
           'Error',
           error?.response?.data?.message || 'Something went wrong.',
@@ -84,7 +103,7 @@ const RequestTemplate = ({
       //   showPopup('Validation', 'Please enter a remark before proceeding.');
       //   return;
       // }
-// ✅ 1. REMARK LOGIC: Only block if the action is 'reject'
+      // ✅ 1. REMARK LOGIC: Only block if the action is 'reject'
       if (action === 'reject' && !remark.trim()) {
         showPopup('Validation', 'Please enter a remark before rejecting.');
         return;
@@ -167,7 +186,7 @@ const RequestTemplate = ({
 
             {/* Leave Balance Section */}
             <Text style={styles.subTitle}>Leave Balance</Text>
-            {leaveBalance?.leaveDetails?.length > 0 ? (
+            {leaveBalance?.leaveDetails?.length ? (
               <View>
                 <View style={styles.tableHeader}>
                   <Text style={[styles.tableCell, { flex: 1 }]}>Type</Text>
@@ -188,7 +207,7 @@ const RequestTemplate = ({
                 ))}
               </View>
             ) : (
-              <Text style={styles.value}>No leave balance available.</Text>
+              <Text style={styles.value}>No leave balance assigned.</Text>
             )}
 
             {/* Applied Dates - Standard Leaves */}

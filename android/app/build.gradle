@@ -38,8 +38,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         
         // Bump version code to force a fresh Play Console tracking identity
-        versionCode 47
-        versionName "2.014"
+        versionCode 48
+        versionName "2.015"
 
         externalNativeBuild {
             cmake {
