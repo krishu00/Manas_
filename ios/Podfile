@@ -26,14 +26,34 @@ target 'Hrms_' do
 
   use_react_native!(
     :path => config[:reactNativePath],
+    :new_arch_enabled => false,
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  post_install do |installer|
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false
-    )
+  # post_install do |installer|
+  #   react_native_post_install(
+  #     installer,
+  #     config[:reactNativePath],
+  #     :mac_catalyst_enabled => false
+  #   )
+  # end
+
+ post_install do |installer|
+  # Default React Native setup
+  react_native_post_install(installer)
+
+  installer.pods_project.targets.each do |target|
+    # 1. Fix for Apple Clang 21 + fmt 11 consteval bug
+    if target.name == 'fmt'
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+    end
+    
+    # 2. Allow legacy objective-C imports in frameworks (Fixes react-native-maps)
+    target.build_configurations.each do |config|
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    end
   end
+end
 end
