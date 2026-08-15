@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -17,8 +18,83 @@ import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
 import { isNotNull } from '../../../src/utils/utils';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Popup from '../../Popup/Popup';
-import { Picker } from '@react-native-picker/picker';
 
+// ==========================================
+// REUSABLE ARCHITECTURE: MODAL-BACKED DROPDOWN
+// ==========================================
+const NativeDropdown = ({ label, value, options, onSelect, placeholder }) => {
+  const buttonRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [layout, setLayout] = useState({ top: 0, left: 0, width: 0 });
+
+  const openDropdown = () => {
+    // Measure the exact position of this specific button on the physical screen
+    buttonRef.current.measure((fx, fy, width, height, pageX, pageY) => {
+      setLayout({
+        top: pageY + height + 4, // Dropdown appears exactly 4px below the button
+        left: pageX,
+        width: width,
+      });
+      setVisible(true);
+    });
+  };
+
+  return (
+    <View style={styles.reasonWrapper}>
+      <Text style={styles.label}>{label}</Text>
+
+      <TouchableOpacity
+        ref={buttonRef}
+        activeOpacity={0.8}
+        style={styles.dropdownButton}
+        onPress={openDropdown}
+      >
+        <Text style={[styles.dropdownText, !value && { color: '#999' }]}>
+          {value || placeholder}
+        </Text>
+        <Text style={styles.arrow}>{visible ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+
+      {/* The Modal mounts a new native window above the ScrollView */}
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)} // Handles Android hardware back button
+      >
+        {/* Invisible full-screen overlay catches outside taps */}
+        <Pressable style={styles.modalOverlay} onPress={() => setVisible(false)}>
+          {/* The list precisely positioned over the original button */}
+          <View
+            style={[
+              styles.dropdownList,
+              { top: layout.top, left: layout.left, width: layout.width },
+            ]}
+          >
+            <ScrollView bounces={false} style={{ maxHeight: 200 }}>
+              {options.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    onSelect(item.value);
+                    setVisible(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
+// ==========================================
+// MAIN COMPOFF COMPONENT
+// ==========================================
 const CompOff = ({ onSubmit, onSuccess }) => {
   const [entries, setEntries] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
@@ -30,7 +106,12 @@ const CompOff = ({ onSubmit, onSuccess }) => {
   const [popup, setPopup] = useState({ visible: false, title: '', message: '' });
   const showPopup = (title, message) => setPopup({ visible: true, title, message });
   const closePopup = () => setPopup({ visible: false, title: '', message: '' });
-  const CompOffType = ["Full Day" , "HalfDay"];
+  
+  const CompOffType = ["Full Day", "HalfDay"];
+  
+  // Format options for the NativeDropdown
+  const compOffOptions = CompOffType.map(type => ({ label: type, value: type }));
+
   // Time picker states
   const [pickerVisible, setPickerVisible] = useState(false);
   const [currentField, setCurrentField] = useState(null); // "inTime" or "outTime"
@@ -109,14 +190,6 @@ const CompOff = ({ onSubmit, onSuccess }) => {
       if (data) {
         const alreadyExists = entries.some(e => e.date === date);
         if (!alreadyExists) {
-          const inDate = new Date(data.punch_in_time);
-          const outDate = new Date(data.punch_out_time);
-
-          const formatTime = dateObj =>
-            `${String(dateObj.getHours()).padStart(2, '0')}:${String(
-              dateObj.getMinutes(),
-            ).padStart(2, '0')}`;
-
           setEntries(prev => [
             ...prev,
             {
@@ -124,6 +197,8 @@ const CompOff = ({ onSubmit, onSuccess }) => {
               date,
               dayType: '',
               reason: '',
+              inTime: data.punch_in_time ? new Date(data.punch_in_time) : null,
+              outTime: data.punch_out_time ? new Date(data.punch_out_time) : null,
             },
           ]);
         }
@@ -139,9 +214,7 @@ const CompOff = ({ onSubmit, onSuccess }) => {
     setEntries(prev =>
       prev.map(e => {
         if (e.id === id) {
-          const updatedEntry = { ...e, [field]: value };
-
-          return updatedEntry;
+          return { ...e, [field]: value };
         }
         return e;
       }),
@@ -152,9 +225,7 @@ const CompOff = ({ onSubmit, onSuccess }) => {
     if (submitting) return;
     setSubmitting(true);
 
-    const isValid = entries.every(
-      e => e.date && e.reason,
-    );
+    const isValid = entries.every(e => e.date && e.reason && e.dayType);
     if (!isValid) {
       showPopup('Validation', 'Please fill all required fields.');
       setSubmitting(false);
@@ -166,15 +237,11 @@ const CompOff = ({ onSubmit, onSuccess }) => {
       if (typeof onSuccess === 'function') {
         onSuccess();
       }
-      // showPopup('Success', 'Your Apply CompOff request has been submitted.');
     } catch (error) {
       console.error('❌ Submit error:', error);
       showPopup('Error', 'Something went wrong while submitting.');
       setSubmitting(false);
     } 
-    // finally {
-    //   setSubmitting(false);
-    // }
   };
 
   const onDayPress = day => {
@@ -190,6 +257,7 @@ const CompOff = ({ onSubmit, onSuccess }) => {
   const deleteEntry = (id) => {
     setEntries(prev => prev.filter(e => e.id !== id));
   };
+
   return (
     <>
       <ScrollView contentContainerStyle={styles.container}>
@@ -199,7 +267,7 @@ const CompOff = ({ onSubmit, onSuccess }) => {
 
         {entries.map(entry => (
           <View key={entry.id} style={styles.card}>
-            <Pressable onPress={() => deleteEntry(entry.id)}>
+            <Pressable style={styles.crossBtn} onPress={() => deleteEntry(entry.id)}>
               <Text style={styles.cross}>❌</Text>
             </Pressable>
             <View style={styles.cardHeader}>
@@ -212,32 +280,14 @@ const CompOff = ({ onSubmit, onSuccess }) => {
               </View>
             </View>
 
-              {/* Day Type Picker */}
-              <View style={styles.reasonWrapper}>
-                <Text style={styles.label}>Select Type *</Text>
-                <View style={styles.input}>
-                  <Picker
-                    selectedValue={entry.dayType || ""}
-                    onValueChange={value => handleChange(entry.id, 'dayType', value)}
-                    style={styles.picker}
-                    mode="dialog"
-                  >
-                    <Picker.Item
-                      label="Select Type"
-                      value=""
-                      style={styles.pickerItem}
-                    />
-                    {CompOffType.map((dayType) => (
-                      <Picker.Item
-                        key={dayType}
-                        label={dayType}
-                        value={dayType}
-                        style={styles.pickerItem}
-                      />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
+            {/* 🔥 REPLACED NATIVE PICKER WITH NATIVE DROPDOWN 🔥 */}
+            <NativeDropdown
+              label="Select Type *"
+              placeholder="Select Type"
+              value={entry.dayType}
+              options={compOffOptions}
+              onSelect={value => handleChange(entry.id, 'dayType', value)}
+            />
 
             <View style={styles.reasonWrapper}>
               <Text style={styles.label}>Select Reason *</Text>
@@ -385,12 +435,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     position: 'relative',
+    zIndex: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
-    marginTop: 28,
+    marginTop: 15,
   },
   dateText: {
     fontSize: 16,
@@ -406,49 +457,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  inputWrapper: {
-    flex: 0.48,
-  },
   label: {
     fontSize: 12,
     color: '#333',
     marginBottom: 4,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
-    fontSize: 14,
-    height: 45,
-    backgroundColor: '#fff',
-    color: '#000',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   reasonWrapper: {
     marginTop: 4,
+    marginBottom: 10,
   },
   reasonInput: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 4,
-    height: 50,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    height: 80,
     textAlignVertical: 'top',
     backgroundColor: '#fff',
-    color: '#0e120ef0',
+    color: '#000',
+  },
+  crossBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    padding: 5,
   },
   cross: {
-    position: 'absolute',
-    top: 2,
-    right: 8,
     fontSize: 12,
   },
   calendarContainer: {
@@ -469,7 +505,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    marginTop: 30,
+    marginTop: 20,
+    marginBottom: 40,
     alignItems: 'center',
   },
   submitButton: {
@@ -477,36 +514,67 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
   },
   submitText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  dayWrapper: {
+  
+  // ==========================================
+  // NATIVE DROPDOWN STYLES
+  // ==========================================
+  dropdownButton: {
+    height: 45,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingHorizontal: 12,
   },
-  dayText: {
+  dropdownText: {
     fontSize: 14,
-    color: '#333',
+    color: '#000',
   },
-  timeText: {
+  arrow: {
     fontSize: 12,
-    marginTop: 2,
+    color: '#666',
   },
-  pickerItem: {
-  color: '#000000',
-  backgroundColor: '#fff',
-  fontSize: 14,
-},
-picker: {
-  color: '#000',
-  paddingHorizontal: 8,
-  height: 45,
-  justifyContent: 'center',
-},
-
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownList: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    // Elegant Native iOS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    // Elegant Native Android Shadow
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#222',
+  },
 });
 
 export default CompOff;

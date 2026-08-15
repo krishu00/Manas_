@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
@@ -440,10 +441,10 @@ const PayslipTemplateNative = ({ payslipResponse }) => {
   //   }
   // }
 
-  const downloadPDF = async () => {
+const downloadPDF = async () => {
+    console.log("Download PDF function called");
     try {
       const { companyDetails, employeeDetails, payslips } = payslipResponse;
-
       const payslip = payslips[0];
 
       const toWords = new ToWords({
@@ -454,15 +455,31 @@ const PayslipTemplateNative = ({ payslipResponse }) => {
           ignoreZeroCurrency: false,
         },
       });
-      const logoBase64 = await RNFS.readFileAssets('1.png', 'base64');
+
+      // 🟢 FIX: Handle iOS and Android file systems dynamically
+      let logoBase64 = '';
+      try {
+        if (Platform.OS === 'android') {
+          logoBase64 = await RNFS.readFileAssets('1.png', 'base64');
+        } else if (Platform.OS === 'ios') {
+          // iOS looks in the Main Bundle
+          const path = `${RNFS.MainBundlePath}/1.png`;
+          const exists = await RNFS.exists(path);
+          if (exists) {
+            logoBase64 = await RNFS.readFile(path, 'base64');
+          } else {
+            console.log("Logo not found in iOS MainBundle");
+          }
+        }
+      } catch (err) {
+        console.log('Error reading logo file:', err);
+      }
+      
       console.log('LOGO LENGTH:', logoBase64?.length);
       const netPayWords = toWords.convert(payslip.netPay);
 
       const earnings = payslip.salaryDetails.filter(x => x.type === 'Earning');
-
-      const deductions = payslip.salaryDetails.filter(
-        x => x.type === 'Deduction',
-      );
+      const deductions = payslip.salaryDetails.filter(x => x.type === 'Deduction');
 
       const maxLength = Math.max(earnings.length, deductions.length);
 
@@ -483,134 +500,30 @@ const PayslipTemplateNative = ({ payslipResponse }) => {
       }
 
       const html = `
-
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-
-body {
-  font-family: Arial, sans-serif;
-  margin: auto;
-  padding: 0;
-}
-
-.payslip-template{
-font-family:"Poppins", "sans-serif";
-width: 94%;
-margin: 0;
-padding: 20px 25px;
-background: linear-gradient(
-to top,
-rgba(193, 223, 196, 0) 0%,
-rgba(238, 248, 238, 0.9647) 100%
-);
-}
-
-.payslip-header{
-position:relative;
-text-align:center;
-padding:20px 0;
-border-bottom:2px solid black;
-}
-
-.company-logo{
-height:auto;
-left:20px;
-top:10px;
-width:80px;
-}
-
-.payslip-title{
-text-align:center;
-font-size:16px;
-margin:10px 0;
-text-decoration:underline;
-color: #004c3f;
-}
-
-.employee-info{
-display:flex;
-justify-content:space-between;
-font-size:12px;
-margin-bottom:10px;
-}
-
-.employee-col{
-width:48%;
-}
-.employee-value{
-  text-align: right;
-  font-weight: bold;
-}
-.employee-row{
-display:flex;
-justify-content:space-between;
-margin-bottom:4px;
-}
-
-.salary-table{
-margin-top:20px;
-border:1px solid black;
-font-size:12px;
-}
-
-.table-header{
-display:grid;
-grid-template-columns:2fr 1fr 2fr 1fr;
-background:#f2f2f2;
-font-weight:bold;
-padding:8px 0;
-border-bottom: 1px solid #000;
-}
-.table-header-cat-ps{
-   display: grid;
-  grid-template-columns: 2fr 2fr ;
-   background-color: #f2f2f2;
-  font-weight: bold;
-  
-}
-.col-cat-ps{
-justify-content: center;
-align-items: center;
-text-align:center;
-border: 1px solid black;
-}
-.table-row{
-display:grid;
-grid-template-columns:2fr 1fr 2fr 1fr;
-padding:4px 0;
-}
-
-.table-total{
-display:grid;
-grid-template-columns:2fr 1fr 2fr 1fr;
-border-top:1px solid black;
-font-weight:bold;
-padding:6px 0;
-}
-
-.col{
-padding:2px 12px;
-}
-
-.amount{
-text-align:right;
-padding:2px 12px;
-font-weight:bold;
-}
-
-.footer{
-margin-top:15px;
-font-size:12px;
-}
-
-.note{
-text-align:center;
-margin-top:15px;
-color:#444;
-}
-
+/* ... keep all your exact same CSS ... */
+body { font-family: Arial, sans-serif; margin: auto; padding: 0; }
+.payslip-template{ font-family:"Poppins", "sans-serif"; width: 94%; margin: 0; padding: 20px 25px; background: linear-gradient(to top, rgba(193, 223, 196, 0) 0%, rgba(238, 248, 238, 0.9647) 100%); }
+.payslip-header{ position:relative; text-align:center; padding:20px 0; border-bottom:2px solid black; }
+.company-logo{ height:auto; left:20px; top:10px; width:80px; }
+.payslip-title{ text-align:center; font-size:16px; margin:10px 0; text-decoration:underline; color: #004c3f; }
+.employee-info{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:10px; }
+.employee-col{ width:48%; }
+.employee-value{ text-align: right; font-weight: bold; }
+.employee-row{ display:flex; justify-content:space-between; margin-bottom:4px; }
+.salary-table{ margin-top:20px; border:1px solid black; font-size:12px; }
+.table-header{ display:grid; grid-template-columns:2fr 1fr 2fr 1fr; background:#f2f2f2; font-weight:bold; padding:8px 0; border-bottom: 1px solid #000; }
+.table-header-cat-ps{ display: grid; grid-template-columns: 2fr 2fr ; background-color: #f2f2f2; font-weight: bold; }
+.col-cat-ps{ justify-content: center; alignItems: center; text-align:center; border: 1px solid black; }
+.table-row{ display:grid; grid-template-columns:2fr 1fr 2fr 1fr; padding:4px 0; }
+.table-total{ display:grid; grid-template-columns:2fr 1fr 2fr 1fr; border-top:1px solid black; font-weight:bold; padding:6px 0; }
+.col{ padding:2px 12px; }
+.amount{ text-align:right; padding:2px 12px; font-weight:bold; }
+.footer{ margin-top:15px; font-size:12px; }
+.note{ text-align:center; margin-top:15px; color:#444; }
 </style>
 </head>
 
@@ -624,85 +537,62 @@ color:#444;
         style="width:80px;height:auto;" 
       />
     </td>
-
     <td width="60%" align="center">
       <h2 style="margin:0;">${companyDetails.name}</h2>
     </td>
-
     <td width="20%"></td>
   </tr>
 </table>
-
 
 <h3 class="payslip-title">
 Pay Slip - ${MONTH_MAP[payslip.month]} ${payslip.year}
 </h3>
 
 <div class="employee-info">
-
 <div class="employee-col">
-
 <div class="employee-row">
 <span>Employee Name</span>
 <span class="employee-value">${employeeDetails.employee_details.name}</span>
 </div>
-
 <div class="employee-row">
 <span>Employee ID</span>
 <span class="employee-value">${employeeDetails.employee_id}</span>
 </div>
-
 <div class="employee-row">
 <span>Designation</span>
-<span class="employee-value">${
-        employeeDetails.official_details.designation
-      }</span>
+<span class="employee-value">${employeeDetails.official_details.designation}</span>
 </div>
-
 <div class="employee-row">
 <span>Date of Joining</span>
-<span class="employee-value">${new Date(
-        employeeDetails.joining_date,
-      ).toLocaleDateString()}</span>
+<span class="employee-value">${new Date(employeeDetails.joining_date).toLocaleDateString()}</span>
 </div>
-
 </div>
 
 <div class="employee-col">
-
 <div class="employee-row">
 <span>PF No</span>
 <span class="employee-value">${employeeDetails.account_details.pf_number}</span>
 </div>
-
 <div class="employee-row">
 <span>ESI No</span>
-<span class="employee-value">${
-        employeeDetails.account_details.esi_number
-      }</span>
+<span class="employee-value">${employeeDetails.account_details.esi_number}</span>
 </div>
-
 <div class="employee-row">
 <span>Account No</span>
-<span class="employee-value">${
-        employeeDetails.account_details.bank_details.account_number
-      }</span>
+<span class="employee-value">${employeeDetails.account_details.bank_details.account_number}</span>
 </div>
-
 <div class="employee-row">
 <span>Worked Days</span>
 <span class="employee-value">${payslip.payrollSummary.payableDays}</span>
 </div>
-
 </div>
-
 </div>
 
 <div class="salary-table">
 <div class="table-header-cat-ps">
-            <div class="col-cat-ps">Earnings</div>
-            <div class="col-cat-ps">Deductions</div>
-          </div>
+  <div class="col-cat-ps">Earnings</div>
+  <div class="col-cat-ps">Deductions</div>
+</div>
 <div class="table-header">
 <div class="col">Particulars</div>
 <div class="amount">Amount (₹)</div>
@@ -718,7 +608,6 @@ ${rows}
 <div class="col">Total Deductions</div>
 <div class="amount">${payslip.grossDeductions.toFixed(2)}</div>
 </div>
-
 </div>
 
 <div class="footer">
@@ -729,7 +618,6 @@ Note: This payslip is computer generated and does not require a signature.
 </p>
 </div>
 </div>
-
 
 </body>
 </html>
@@ -748,7 +636,6 @@ Note: This payslip is computer generated and does not require a signature.
       console.log('PDF Error:', error);
     }
   };
-
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
       <ViewShot ref={viewRef}>

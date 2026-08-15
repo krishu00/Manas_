@@ -9,13 +9,87 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import { apiMiddleware } from '../../../src/apiMiddleware/apiMiddleware';
 import Popup from '../../Popup/Popup';
 
+// ==========================================
+// REUSABLE ARCHITECTURE: MODAL-BACKED DROPDOWN
+// ==========================================
+const NativeDropdown = ({ label, value, options, onSelect, placeholder }) => {
+  const buttonRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [layout, setLayout] = useState({ top: 0, left: 0, width: 0 });
+
+  const openDropdown = () => {
+    // Measure the button's exact position on the physical screen
+    buttonRef.current.measure((fx, fy, width, height, pageX, pageY) => {
+      setLayout({
+        top: pageY + height + 4, // Dropdown appears exactly 4px below the button
+        left: pageX,
+        width: width,
+      });
+      setVisible(true);
+    });
+  };
+
+  return (
+    <View style={styles.inputWrapperFull}>
+      <Text style={styles.label}>{label}</Text>
+
+      <TouchableOpacity
+        ref={buttonRef}
+        activeOpacity={0.8}
+        style={styles.dropdownButton}
+        onPress={openDropdown}
+      >
+        <Text style={[styles.dropdownText, !value && { color: '#999' }]}>
+          {value || placeholder}
+        </Text>
+        <Text style={styles.arrow}>{visible ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+
+      {/* The Modal mounts a new native window above the ScrollView */}
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)} // Handles Android hardware back button
+      >
+        {/* Invisible full-screen overlay catches outside taps */}
+        <Pressable style={styles.modalOverlay} onPress={() => setVisible(false)}>
+          
+          {/* The list precisely positioned over the original button */}
+          <View style={[styles.dropdownList, { top: layout.top, left: layout.left, width: layout.width }]}>
+            <ScrollView bounces={false} style={{ maxHeight: 200 }}>
+              {options.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    onSelect(item.value);
+                    setVisible(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
+
+// ==========================================
+// MAIN FORM COMPONENT
+// ==========================================
 const Leave = ({ onClose, onSuccess }) => {
   const [leaveData, setLeaveData] = useState({
     leaveType: '',
@@ -28,10 +102,7 @@ const Leave = ({ onClose, onSuccess }) => {
   });
 
   const [leaveTypes, setLeaveTypes] = useState([]);
-  const [showCalendar, setShowCalendar] = useState({
-    visible: false,
-    field: '',
-  });
+  const [showCalendar, setShowCalendar] = useState({ visible: false, field: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const [popupVisible, setPopupVisible] = useState(false);
@@ -55,9 +126,7 @@ const Leave = ({ onClose, onSuccess }) => {
   useEffect(() => {
     const fetchLeaveTypes = async () => {
       try {
-        const response = await apiMiddleware.get(
-          `/leaves-balance/get-leaves-balance`,
-        );
+        const response = await apiMiddleware.get(`/leaves-balance/get-leaves-balance`);
         if (response?.data?.data?.leaveDetails) {
           setLeaveTypes(response.data.data.leaveDetails);
         } else {
@@ -71,61 +140,22 @@ const Leave = ({ onClose, onSuccess }) => {
     fetchLeaveTypes();
   }, []);
 
-  // 🟢 Calculate days dynamically
   const calculateDays = (from, to, startDayType, endDayType) => {
     if (!from || !to) return '';
-
     const start = moment(from, 'YYYY-MM-DD');
     const end = moment(to, 'YYYY-MM-DD');
+    
     if (!start.isValid() || !end.isValid()) return '';
-
     if (end.isBefore(start)) return '';
 
     let diff = end.diff(start, 'days') + 1;
 
-    // half-day adjustments like in web
-    if (
-      (start === end) &&
-      (startDayType === "first_session" &&
-      endDayType === "first_session") 
-    ) {
-      diff = 0.5;
-    }
-    if (
-      (startDayType === "first_session" &&
-      endDayType === "first_session") 
-    ) {
-      diff -= 0.5;
-    }
-    
-    if (
-      startDayType === "full_day" &&
-      endDayType === "first_session"
-    ) {
-      diff -= 0.5;
-    }
-
-     if (
-      startDayType === "second_session" &&
-      endDayType === "full_day"
-    ) {
-      diff -= 0.5;
-    }
-
-    if (
-      startDayType === "second_session" &&
-      endDayType === "second_session"
-    ) {
-      diff -= 0.5;
-    }
-    if (
-      startDayType === "second_session" &&
-      endDayType === "first_session"
-    ) {
-      diff -= 1;
-    }
-  
-    
+    if (start === end && startDayType === "first_session" && endDayType === "first_session") diff = 0.5;
+    if (startDayType === "first_session" && endDayType === "first_session") diff -= 0.5;
+    if (startDayType === "full_day" && endDayType === "first_session") diff -= 0.5;
+    if (startDayType === "second_session" && endDayType === "full_day") diff -= 0.5;
+    if (startDayType === "second_session" && endDayType === "second_session") diff -= 0.5;
+    if (startDayType === "second_session" && endDayType === "first_session") diff -= 1;
 
     return diff > 0 ? diff.toString() : '';
   };
@@ -147,15 +177,7 @@ const Leave = ({ onClose, onSuccess }) => {
     if (submitting) return;
     setSubmitting(true);
 
-    const {
-      leaveType,
-      fromDate,
-      toDate,
-      reason,
-      numberOfDays,
-      startDayType,
-      endDayType,
-    } = leaveData;
+    const { leaveType, fromDate, toDate, reason, numberOfDays, startDayType, endDayType } = leaveData;
 
     if (!leaveType || !fromDate || !toDate || !reason || !numberOfDays) {
       showPopup('Validation Error', 'Please fill in all fields.');
@@ -177,13 +199,9 @@ const Leave = ({ onClose, onSuccess }) => {
       const response = await apiMiddleware.post('/request/leave', payload);
       if (response?.status === 201) {
         setLeaveData({
-          leaveType: '',
-          fromDate: '',
-          toDate: '',
-          startDayType: 'full_day',
-          endDayType: 'full_day',
-          reason: '',
-          numberOfDays: '',
+          leaveType: '', fromDate: '', toDate: '',
+          startDayType: 'full_day', endDayType: 'full_day',
+          reason: '', numberOfDays: '',
         });
 
         showPopup('Success', 'Leave request submitted successfully!', () => {
@@ -193,141 +211,90 @@ const Leave = ({ onClose, onSuccess }) => {
           }, 500);
         });
       } else {
-        showPopup(
-          'Error',
-          response?.data?.message || 'Failed to submit leave.',
-        );
+        showPopup('Error', response?.data?.message || 'Failed to submit leave.');
       }
     } catch (error) {
-      showPopup(
-        'Error',
-        error.response?.data?.message || 'Something went wrong.',
-      );
+      showPopup('Error', error.response?.data?.message || 'Something went wrong.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Format dynamic APIs for the generic dropdown
+  const formattedLeaveTypes = leaveTypes.map(leave => ({
+    label: leave.leaveTypeName,
+    value: leave.leaveTypeName,
+  }));
+
+  const dayTypeOptions = [
+    { label: 'Full Day', value: 'full_day' },
+    { label: 'First Session', value: 'first_session' },
+    { label: 'Second Session', value: 'second_session' },
+  ];
+
   return (
     <>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Leave Type (full width) */}
-        <View style={styles.inputWrapperFull}>
-          <Text style={styles.label}>Leave Type</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={leaveData.leaveType}
-              onValueChange={value => handleInputChange('leaveType', value)}
-              style={styles.picker}
-            >
-              <Picker.Item
-                label="Select Type"
-                value=""
-                style={styles.pickerItem}
-              />
-              {leaveTypes.map(leave => (
-                <Picker.Item
-                  key={leave.leaveTypeId._id}
-                  label={leave.leaveTypeId.leave_name}
-                  value={leave.leaveTypeId.leave_name}
-                  style={styles.pickerItem}
-                />
-              ))}
-            </Picker>
-          </View>
-        </View>
+        
+        {/* REUSABLE LEAVE TYPE DROPDOWN */}
+        <NativeDropdown
+          label="Leave Type"
+          placeholder="Select Leave Type"
+          value={leaveData.leaveType}
+          options={formattedLeaveTypes}
+          onSelect={(val) => handleInputChange("leaveType", val)}
+        />
 
-        {/* Start Date + Start Day Type */}
         <View style={styles.row}>
           <View style={styles.inputWrapper}>
             <Text style={styles.label}>Start Date</Text>
-            <TouchableOpacity
-              onPress={() =>
-                setShowCalendar({ visible: true, field: 'fromDate' })
-              }
-            >
+            <TouchableOpacity onPress={() => setShowCalendar({ visible: true, field: 'fromDate' })}>
               <TextInput
                 style={styles.input}
                 value={leaveData.fromDate}
                 editable={false}
+                pointerEvents="none"
               />
             </TouchableOpacity>
           </View>
+          
           <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Start Day Type</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={leaveData.startDayType}
-                onValueChange={value =>
-                  handleInputChange('startDayType', value)
-                }
-                style={styles.picker}
-              >
-                <Picker.Item
-                  label="Full Day"
-                  value="full_day"
-                  style={styles.pickerItem}
-                />
-                <Picker.Item
-                  label="First Session"
-                  value="first_session"
-                  style={styles.pickerItem}
-                />
-                <Picker.Item
-                  label="Second Session"
-                  value="second_session"
-                  style={styles.pickerItem}
-                />
-              </Picker>
-            </View>
+            {/* REUSABLE START DAY DROPDOWN */}
+            <NativeDropdown
+              label="Start Day Type"
+              placeholder="Select Day Type"
+              value={dayTypeOptions.find(opt => opt.value === leaveData.startDayType)?.label}
+              options={dayTypeOptions}
+              onSelect={(val) => handleInputChange("startDayType", val)}
+            />
           </View>
         </View>
 
-        {/* End Date + End Day Type */}
         <View style={styles.row}>
           <View style={styles.inputWrapper}>
             <Text style={styles.label}>End Date</Text>
-            <TouchableOpacity
-              onPress={() =>
-                setShowCalendar({ visible: true, field: 'toDate' })
-              }
-            >
+            <TouchableOpacity onPress={() => setShowCalendar({ visible: true, field: 'toDate' })}>
               <TextInput
                 style={styles.input}
                 value={leaveData.toDate}
                 editable={false}
+                pointerEvents="none"
               />
             </TouchableOpacity>
           </View>
+          
           <View style={styles.inputWrapper}>
-            <Text style={styles.label}>End Day Type</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={leaveData.endDayType}
-                onValueChange={value => handleInputChange('endDayType', value)}
-                style={styles.picker}
-              >
-                <Picker.Item
-                  label="Full Day"
-                  value="full_day"
-                  style={styles.pickerItem}
-                />
-                <Picker.Item
-                  label="First Session"
-                  value="first_session"
-                  style={styles.pickerItem}
-                />
-                <Picker.Item
-                  label="Second Session"
-                  value="second_session"
-                  style={styles.pickerItem}
-                />
-              </Picker>
-            </View>
+            {/* REUSABLE END DAY DROPDOWN */}
+            <NativeDropdown
+              label="End Day Type"
+              placeholder="Select Day Type"
+              value={dayTypeOptions.find(opt => opt.value === leaveData.endDayType)?.label}
+              options={dayTypeOptions}
+              onSelect={(val) => handleInputChange("endDayType", val)}
+            />
           </View>
         </View>
 
-        {/* Reason */}
         <Text style={styles.label}>Reason</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -338,14 +305,13 @@ const Leave = ({ onClose, onSuccess }) => {
           onChangeText={text => handleInputChange('reason', text)}
         />
 
-        {/* ✅ Show number of days as text */}
         {leaveData.numberOfDays ? (
           <Text style={styles.totalDaysText}>
             Total Leaves Applied for : {leaveData.numberOfDays}{' '}
             {parseFloat(leaveData.numberOfDays) > 1 ? 'days' : 'day'}
           </Text>
         ) : null}
-        {/* Submit */}
+
         <View style={styles.submitButton}>
           {submitting ? (
             <ActivityIndicator size="small" color="#6a9689" />
@@ -354,9 +320,8 @@ const Leave = ({ onClose, onSuccess }) => {
           )}
         </View>
 
-        {/* Calendar Modal */}
         <Modal visible={showCalendar.visible} transparent animationType="slide">
-          <View style={styles.modalWrapper}>
+          <View style={styles.modalContentWrapper}>
             <View style={styles.calendarContainer}>
               <Calendar
                 onDayPress={day => {
@@ -364,32 +329,18 @@ const Leave = ({ onClose, onSuccess }) => {
                   setShowCalendar({ visible: false, field: '' });
                 }}
                 markedDates={{
-                  [leaveData.fromDate]: {
-                    selected: true,
-                    selectedColor: '#009688',
-                  },
-                  [leaveData.toDate]: {
-                    selected: true,
-                    selectedColor: '#00796B',
-                  },
+                  [leaveData.fromDate]: { selected: true, selectedColor: '#009688' },
+                  [leaveData.toDate]: { selected: true, selectedColor: '#00796B' },
                 }}
               />
-              <Button
-                title="Cancel"
-                onPress={() => setShowCalendar({ visible: false, field: '' })}
-              />
+              <Button title="Cancel" onPress={() => setShowCalendar({ visible: false, field: '' })} />
             </View>
           </View>
         </Modal>
       </ScrollView>
 
-      {/* Popup */}
       {popupVisible && (
-        <Popup
-          title={popupContent.title}
-          message={popupContent.message}
-          onClose={handlePopupClose}
-        />
+        <Popup title={popupContent.title} message={popupContent.message} onClose={handlePopupClose} />
       )}
     </>
   );
@@ -402,21 +353,21 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#eaf6ef',
     borderRadius: 20,
-    maxWidth: 400,
     alignSelf: 'center',
     width: '100%',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
+  },
+  inputWrapperFull: {
+    width: '100%',
+    marginBottom: 15,
   },
   inputWrapper: {
     flex: 1,
     marginRight: 10,
-    marginBottom: 15,
-  },
-  inputWrapperFull: {
-    width: '100%',
     marginBottom: 15,
   },
   label: {
@@ -428,41 +379,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     paddingHorizontal: 12,
-    height: 50, // 🔹 fixed height
+    height: 50,
     borderColor: '#ccc',
     color: '#0e120ef0',
-
     borderWidth: 1,
     justifyContent: 'center',
-  },
-  pickerWrapper: {
-    borderRadius: 10,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    overflow: 'hidden',
-    height: 50, // 🔹 same as input
-    justifyContent: 'center',
-  },
-  picker: {
-    height: 50, // 🔹 match input height
-    backgroundColor: '#fff',
-  },
-  pickerItem: {
-    fontSize: 14, // 🔹 better visibility
-    color: '#171616',
-    fontWeight: '500',
-    backgroundColor: '#fff',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
     marginBottom: 15,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
     paddingVertical: 12,
-    borderColor: '#ccc',
-    borderWidth: 1,
   },
   totalDaysText: {
     fontSize: 15,
@@ -476,7 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
-  modalWrapper: {
+  modalContentWrapper: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
@@ -487,5 +414,58 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     elevation: 5,
+  },
+  
+  // ==========================================
+  // NATIVE DROPDOWN STYLES
+  // ==========================================
+  dropdownButton: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#222',
+  },
+  arrow: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownList: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    // Elegant Native iOS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    // Elegant Native Android Shadow
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#222',
   },
 });

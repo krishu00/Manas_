@@ -77,68 +77,10 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
     };
     loadCredentials();
   }, []);
-  // const handleLogin = async () => {
-  //   const abortController = new AbortController();
-  //   setController(abortController);
-
-  //   try {
-  //     const response = await apiMiddleware.post(
-  //       '/login',
-  //       { email: email.trim(), password: password.trim() },
-  //       {
-  //         headers: { 'Content-Type': 'application/json' },
-  //         signal: abortController.signal,
-  //       },
-  //     );
-
-  //     if (response?.data?.success) {
-  //       const { employee, firstTimeLogin } = response.data;
-  //       if (firstTimeLogin) {
-  //         navigation.replace('FirstTimeLogin');
-  //         return;
-  //       }
-
-  //       if (employee && employee.employee_id && employee.company_code) {
-  //         storage.set('employee_id', employee.employee_id);
-  //         storage.set('companyCode', employee.company_code);
-  //         storage.set('userToken', employee.employee_id);
-  //         storage.set('loginTime', Date.now().toString());
-
-  //         // ✅ Save credentials securely if Remember Me checked
-  //         if (rememberMe) {
-  //           await Keychain.setGenericPassword(email.trim(), password.trim());
-  //         } else {
-  //           await Keychain.resetGenericPassword(); // clear if unchecked
-  //         }
-
-  //         onLoginSuccess(employee.employee_id);
-  //       } else {
-  //         showPopup('Login Failed', 'Employee data missing in response.');
-  //       }
-  //     } else {
-  //       showPopup(
-  //         'Login Failed',
-  //         response?.data?.message || 'Invalid credentials. Please try again.',
-  //       );
-  //     }
-  //   } catch (error) {
-  //     if (error.name === 'AbortError') {
-  //       console.log('Login request aborted');
-  //     } else {
-  //       console.error('Login error:', error);
-  //       showPopup(
-  //         'Error',
-  //         error.response?.data?.message ||
-  //           'An error occurred during login. Please try again.',
-  //       );
-  //     }
-  //   }
-  // };
-
   const handleLogin = async () => {
     const abortController = new AbortController();
     setController(abortController);
-
+    console.log("apiMiddleware", apiMiddleware)
     try {
       const response = await apiMiddleware.post(
         '/login',
@@ -225,7 +167,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
         showPopup(
           'Error',
           error.response?.data?.message ||
-            'An error occurred during login. Please try again.',
+          'An error occurred during login. Please try again.',
         );
       }
     }
@@ -263,7 +205,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
       showPopup(
         'Error',
         error.response?.data?.message ||
-          'Something went wrong. Please try again.',
+        'Something went wrong. Please try again.',
       );
     }
   };

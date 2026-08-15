@@ -1,8 +1,9 @@
 module.exports = {
+  assets: ['./node_modules/react-native-vector-icons/Fonts'],
   dependencies: {
     'react-native-vector-icons': {
       platforms: {
-        android: null, // ??? Disables autolinking to stop the buggy fonts.gradle from loading
+        android: null,
       },
     },
   },

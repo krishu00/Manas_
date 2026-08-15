@@ -5,8 +5,7 @@ import {
   TouchableOpacity,
   View,
   Image,
-  TouchableWithoutFeedback,
-  Pressable,
+  Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +29,7 @@ const Header = ({
     title: '',
     message: '',
   });
+
   useEffect(() => {
     const controller = new AbortController();
     UserDetails(controller);
@@ -66,11 +66,6 @@ const Header = ({
     onDropdownVisibleChange && onDropdownVisibleChange(dropdownVisible);
   }, [dropdownVisible, onDropdownVisibleChange]);
 
-  const handleOutsidePress = () => {
-    if (dropdownVisible) {
-      setDropdownVisible(false);
-    }
-  };
   // Close dropdown if parent signals
   useEffect(() => {
     if (closeDropdownFlag && dropdownVisible) {
@@ -94,12 +89,9 @@ const Header = ({
         return;
       }
 
-      const headers = {
-        Cookie: `employee_id=${storedEmployeeId}; companyCode=${storedCompanyCode}`,
-      };
-
       const response = await apiMiddleware.get('/company/employee-details', {
-        headers,
+        companyCode: storedCompanyCode,
+        employee_id: storedEmployeeId,
         signal: controller.signal,
       });
 
@@ -124,91 +116,103 @@ const Header = ({
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#C1DFC4', '#DEECDD']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerContainer}
-        >
-          <Image
-            source={require('../../src/logos/logo-HD.png')}
-            style={styles.logo}
-          />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#C1DFC4', '#DEECDD']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerContainer}
+      >
+        <Image
+          source={require('../../src/logos/logo-HD.png')}
+          style={styles.logo}
+        />
 
-          <View style={styles.userInfoContainer}>
+        <View style={styles.userInfoContainer}>
+          <TouchableOpacity
+            style={styles.userInfoRow}
+            onPress={handleToggleDropdown}
+            activeOpacity={0.8}
+          >
+            <View style={styles.userTextContainer}>
+              <Text style={styles.username}>
+                {name.split(' ')[0] || 'Employee Name'}
+              </Text>
+
+              <Text style={styles.userId}>
+                {employeeId || 'Employee ID'}
+              </Text>
+            </View>
+
+            <Icon name="user-circle" size={32} color="#00503D" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* ✅ FIX: Wrapped the dropdown in a Modal to bypass touch boundary limits */}
+      <Modal
+        visible={dropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        {/* Full screen overlay to detect outside clicks and close the menu */}
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDropdownVisible(false)}
+        >
+          {/* The actual dropdown menu */}
+          <View style={styles.dropdownContainer}>
             <TouchableOpacity
-              onPress={handleToggleDropdown}
-              style={styles.userInfoRow}
+              style={styles.dropdownOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                console.log('PROFILE CLICKED');
+                setDropdownVisible(false);
+                onNavigateToProfile();
+              }}
             >
-              <View style={styles.userTextContainer}>
-                <Text style={styles.username}>
-                  {name.split(' ')[0] || 'Employee Name'}
-                </Text>
-                <Text style={styles.userId}>{employeeId || 'Employee ID'}</Text>
-              </View>
-              <Icon name="user-circle" size={32} color="#00503D" />
+              <Icon name="user" size={18} color="#81BAA5" />
+              <Text style={styles.dropdownText}>Profile</Text>
             </TouchableOpacity>
 
-            {dropdownVisible && (
-              <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-                {/* invisible fullscreen layer to catch outside taps */}
-                <TouchableWithoutFeedback
-                  onPress={() => setDropdownVisible(false)}
-                >
-                  <View style={styles.fullscreenOverlay} />
-                </TouchableWithoutFeedback>
+            <TouchableOpacity
+              style={styles.dropdownOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                console.log('SALARY CLICKED');
+                setDropdownVisible(false);
+                onNavigateToSalary();
+              }}
+            >
+              <Icon name="dollar" size={18} color="#81BAA5" />
+              <Text style={styles.dropdownText}>Salary</Text>
+            </TouchableOpacity>
 
-                <View style={styles.dropdownContainer} pointerEvents="auto">
-                  <TouchableOpacity
-                    onPress={() => {
-                      setDropdownVisible(false);
-                      onNavigateToProfile();
-                    }}
-                    style={styles.dropdownOption}
-                  >
-                    <Text style={styles.dropdownText}>
-                      <Icon name="user" size={18} color="#81BAA5" /> Profile
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      console.log(
-                        '🔵 Salary button pressed, calling onNavigateToSalary',
-                      );
-                      setDropdownVisible(false);
-                      onNavigateToSalary();
-                    }}
-                    style={styles.dropdownOption}
-                  >
-                    <Text style={styles.dropdownText}>
-                      <Icon name="dollar" size={18} color="#81BAA5" /> Salary
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleLogout}
-                    style={styles.dropdownOption}
-                  >
-                    <Text style={styles.dropdownText}>
-                      <Icon name="sign-out" size={18} color="#81BAA5" /> Logout
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+            <TouchableOpacity
+              style={styles.dropdownOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                console.log('LOGOUT CLICKED');
+                handleLogout();
+              }}
+            >
+              <Icon name="sign-out" size={18} color="#81BAA5" />
+              <Text style={styles.dropdownText}>Logout</Text>
+            </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </TouchableOpacity>
+      </Modal>
 
-        {popup.visible && (
-          <Popup
-            title={popup.title}
-            message={popup.message}
-            onClose={() => setPopup({ ...popup, visible: false })}
-          />
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+      {popup.visible && (
+        <Popup
+          title={popup.title}
+          message={popup.message}
+          onClose={() => setPopup({ ...popup, visible: false })}
+        />
+      )}
+    </View>
   );
 };
 
@@ -217,8 +221,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerContainer: {
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 25, // Adjusted to account for iOS safe area / status bar natively
+    paddingBottom: 15,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -250,34 +254,38 @@ const styles = StyleSheet.create({
     color: '#00503D',
     fontWeight: '700',
   },
+  // ✅ NEW STYLES FOR THE MODAL OVERLAY
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   dropdownContainer: {
     position: 'absolute',
-    right: 0,
+    top: 100, // Matches the height of the header so it drops right below the icon
+    right: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
-    elevation: 4,
-    marginTop: 17,
     padding: 8,
-    elevation: 100,
-    zIndex: 6000,
+    // Android Shadow
+    elevation: 10,
+    // iOS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   dropdownOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: 'row', // This places the icon and text side-by-side
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10, // Adds clean spacing between icon and text
   },
   dropdownText: {
     color: '#81BAA5',
     fontWeight: '600',
+    fontSize: 16,
     width: 80,
-    // fontSize: 18,
-    // paddingBottom: 5,
-  },
-  fullscreenOverlay: {
-    position: 'absolute',
-
-    zIndex: 1000, // below dropdownContainer
   },
 });
 
