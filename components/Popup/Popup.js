@@ -1,37 +1,40 @@
 import React, { useEffect } from 'react';
-import { Pressable, View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native';
 
-const Popup = ({ title, message, onClose, autoClose = true }) => {
+const Popup = ({ title, message, onClose, autoClose = true, autoCloseDelay = 5000 }) => {
   useEffect(() => {
-    if (autoClose) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 3000);
+    if (!autoClose) return undefined;
 
-      return () => clearTimeout(timer); // cleanup
-    }
-  }, [autoClose, onClose]);
-  const handleOverlayPress = () => {
-    onClose();
-  };
+    const timer = setTimeout(() => {
+      onClose();
+    }, autoCloseDelay);
 
-  
+    return () => clearTimeout(timer);
+  }, [autoClose, autoCloseDelay, onClose]);
 
   return (
-    <Modal transparent animationType="fade"  onRequestClose={onClose}>
-       <Pressable style={styles.overlay} onPress={handleOverlayPress}>
-         <Pressable style={styles.container} onPress={e => e.stopPropagation()}>
-         <View style={styles.popup} onStartShouldSetResponder={() => true}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          <TouchableOpacity style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>OK</Text>
-          </TouchableOpacity>
-       </View>
-      </Pressable>
-      </Pressable>
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.popup}>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.message}>{message}</Text>
+              <TouchableOpacity style={styles.button} onPress={onClose}>
+                <Text style={styles.buttonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
-   
   );
 };
 

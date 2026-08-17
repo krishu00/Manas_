@@ -174,10 +174,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 4,
     alignItems: 'center',
-    width: 380, // Set a fixed width for horizontal scrolling
+    width: 380,
   },
   headerRow: {
     backgroundColor: '#dbead7',
+    // width: 420,
   },
   cell: {
     fontSize: 12,

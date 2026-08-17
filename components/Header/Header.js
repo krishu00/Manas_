@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -28,7 +28,10 @@ const Header = ({
     visible: false,
     title: '',
     message: '',
+    onClose: null,
   });
+  const popupTimerRef = useRef(null);
+  const logoutTimerRef = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -39,24 +42,95 @@ const Header = ({
     };
   }, []);
 
-  const showPopup = (title, message) => {
-    setPopup({ visible: true, title, message });
-  };
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+      }
 
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+    };
+  }, []);
+  const showPopup = (
+    title,
+    message,
+    autoClose = false,
+    onCloseCallback = null
+  ) => {
+    // Clear existing timer
+    if (popupTimerRef.current) {
+      clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = null;
+    }
+
+    setPopup({
+      visible: true,
+      title,
+      message,
+      onClose: onCloseCallback,
+    });
+
+    if (autoClose) {
+      popupTimerRef.current = setTimeout(() => {
+        closePopup();
+      }, 5000);
+    }
+  };
+  const closePopup = () => {
+    if (popupTimerRef.current) {
+      clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = null;
+    }
+
+    const callback = popup.onClose;
+
+    setPopup({
+      visible: false,
+      title: '',
+      message: '',
+      onClose: null,
+    });
+
+    // Execute callback after popup is closed
+    if (callback) {
+      callback();
+    }
+  };
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('userToken');
 
+      // Close dropdown modal
       setDropdownVisible(false);
-      onLogoutSuccess();
 
-      showPopup('Success', 'You have been logged out successfully.');
+      // Give the Modal time to disappear
+      logoutTimerRef.current = setTimeout(() => {
+        showPopup(
+          'Success',
+          'You have been logged out successfully.',
+          true,
+          () => {
+            onLogoutSuccess?.();
+          }
+        );
+      }, 150);
+
     } catch (error) {
       console.error('Logout error:', error);
-      showPopup('Error', 'Logout failed. Please try again.');
+
+      setDropdownVisible(false);
+
+      logoutTimerRef.current = setTimeout(() => {
+        showPopup(
+          'Error',
+          'Logout failed. Please try again.',
+          true
+        );
+      }, 150);
     }
   };
-
   const handleToggleDropdown = () => {
     setDropdownVisible(prev => !prev);
   };
@@ -209,7 +283,7 @@ const Header = ({
         <Popup
           title={popup.title}
           message={popup.message}
-          onClose={() => setPopup({ ...popup, visible: false })}
+          onClose={closePopup}
         />
       )}
     </View>

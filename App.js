@@ -14,9 +14,9 @@ import FirstTimeLogin from './components/Login/FirstTimeLogin';
 import Popup from './components/Popup/Popup';  
 
 // 👇 TEMPORARILY DISABLED FIREBASE IMPORTS 👇
-// import messaging from '@react-native-firebase/messaging';
-// import { requestUserPermission } from './components/FCMService/FCMService';
-// import { initFCMListeners } from './src/utils/NotificationService';
+import messaging from '@react-native-firebase/messaging';
+import { requestUserPermission ,getFCMToken } from './components/FCMService/FCMService';
+import { initFCMListeners } from './src/utils/NotificationService';
 import { navigationRef } from './src/utils/NavigationService';
 
 const Stack = createNativeStackNavigator();
@@ -72,29 +72,67 @@ const AppMain = () => {
   }, [showPopup]);
 
   // 👇 TEMPORARILY DISABLED FIREBASE FCM SETUP 👇
-  useEffect(() => {
-    /*
-    const setupFCMToken = async () => {
-      const enabled = await requestUserPermission();
-      if (enabled) {
-        try {
-          const token = await messaging().getToken();
-          setFcmToken(token);
-          console.log('FCM Token:', token);
-        } catch (error) {
-          console.error('Error getting FCM token:', error);
-        }
-      } else {
-        console.log('FCM Permission denied');
-      }
-    };
+  // useEffect(() => {
+    
+  //   const setupFCMToken = async () => {
+  //     const enabled = await requestUserPermission();
+  //     if (enabled) {
+  //       try {
+  //         const token = await messaging().getToken();
+  //         setFcmToken(token);
+  //         console.log('FCM Token:', token);
+  //       } catch (error) {
+  //         console.error('Error getting FCM token:', error);
+  //       }
+  //     } else {
+  //       console.log('FCM Permission denied');
+  //     }
+  //   };
 
-    setupFCMToken();
-    const unsubscribe = initFCMListeners(); // handles foreground + background + quit
-    return () => unsubscribe && unsubscribe();
-    */
-    console.log("Firebase is temporarily disabled. Skipping FCM setup.");
-  }, []);
+  //   setupFCMToken();
+  //   const unsubscribe = initFCMListeners(); // handles foreground + background + quit
+  //   return () => unsubscribe && unsubscribe();
+    
+  //   console.log("Firebase is temporarily disabled. Skipping FCM setup.");
+  // }, []);
+
+
+  useEffect(() => {
+  let unsubscribe;
+
+  const setupFCM = async () => {
+    try {
+      console.log('🔥 Starting FCM setup...');
+
+      const permissionGranted = await requestUserPermission();
+
+      if (!permissionGranted) {
+        console.log('❌ FCM permission denied');
+        return;
+      }
+
+      const token = await getFCMToken();
+
+      if (token) {
+        setFcmToken(token);
+      }
+
+      unsubscribe = initFCMListeners();
+
+      console.log('✅ FCM setup completed');
+    } catch (error) {
+      console.error('❌ FCM setup failed:', error);
+    }
+  };
+
+  setupFCM();
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  };
+}, []);
 
   // ======= Auto logout =======
   useEffect(() => {

@@ -12,6 +12,7 @@ import {
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import RequestTemplate from '../RequestScreensComp/RequestTemplate';
 import Popup from '../Popup/Popup';
+import { SPACING, FONT } from '../../src/utils/responsive';
 
 const Approvals = ({
   refreshFlag,
@@ -166,61 +167,67 @@ const Approvals = ({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity activeOpacity={1}>
-        {loading ? (
+      {loading ? (
+        <View style={styles.centerFill}>
           <ActivityIndicator size="large" color="#6a9689" />
-        ) : approvals.length === 0 ? (
+        </View>
+      ) : approvals.length === 0 ? (
+        <View style={styles.centerFill}>
           <Text style={styles.emptyText}>No Approvals Found</Text>
-        ) : (
-          <ScrollView horizontal>
-            <View>
-              {renderHeader()}
-              <FlatList
-                data={[...approvals].reverse()}
-                renderItem={renderItem}
-                keyExtractor={item => item._id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 80 }}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    colors={['#6a9689']}
-                  />
-                }
-              />
-            </View>
-          </ScrollView>
-        )}
+        </View>
+      ) : (
+        <ScrollView horizontal>
+          <View>
+            {renderHeader()}
+            <FlatList
+              data={[...approvals].reverse()}
+              renderItem={renderItem}
+              keyExtractor={item => item._id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 80 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#6a9689']}
+                />
+              }
+            />
+          </View>
+        </ScrollView>
+      )}
 
-        {selectedRequest && (
-          <RequestTemplate
-            visible={!!selectedRequest}
-            appliedData={selectedRequest}
-            onClose={() => setSelectedRequest(null)}
-            // refreshData={fetchApprovals}
-            refreshData={handleRefreshData}
-          />
-        )}
+      {selectedRequest && (
+        <RequestTemplate
+          visible={!!selectedRequest}
+          appliedData={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          // refreshData={fetchApprovals}
+          refreshData={handleRefreshData}
+        />
+      )}
 
-        {errorPopup && (
-          <Popup
-            title={errorPopup.title}
-            message={errorPopup.message}
-            onClose={() => setErrorPopup(null)}
-          />
-        )}
-      </TouchableOpacity>
+      {errorPopup && (
+        <Popup
+          title={errorPopup.title}
+          message={errorPopup.message}
+          onClose={() => setErrorPopup(null)}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff', padding: 12 },
+  container: { flex: 1, backgroundColor: '#ffffff', padding: SPACING.md },
+  centerFill: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyText: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     textAlign: 'center',
-    marginTop: 20,
     color: '#888',
   },
   row: {

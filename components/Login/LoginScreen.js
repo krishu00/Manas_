@@ -271,7 +271,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
 
         <View style={styles.forgotPasswordContainer}>
           <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Your Password?</Text>
+            <Text style={styles.forgotPasswordText}>Forgot Password ?</Text>
           </TouchableOpacity>
         </View>
 
@@ -295,7 +295,12 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1, padding: 32 },
+  content: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    paddingBottom: 16,
+  },
   logo: {
     width: 250,
     height: 150,
@@ -305,12 +310,17 @@ const styles = StyleSheet.create({
   },
   titleContainer: { alignItems: 'center', marginVertical: 8 },
   subTitleText: { fontSize: 32, fontWeight: '700', color: '#6a9689' },
-  inputContainer: { marginVertical: 16 },
+  inputContainer: {
+    marginVertical: 16,
+    marginHorizontal: 14,
+  },
   textInput: {
     padding: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
     color: '#000',
+    borderWidth: 1,
+    borderColor: 'rgba(106, 150, 137, 0.12)',
   },
   textInputWithIcon: {
     padding: 16,
@@ -318,9 +328,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: '#000',
     paddingRight: 45,
+    borderWidth: 1,
+    borderColor: 'rgba(106, 150, 137, 0.12)',
   },
   eyeIcon: { position: 'absolute', right: 16, top: 18 },
-  forgotPasswordContainer: { alignItems: 'flex-end' },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginHorizontal: 14,
+    marginBottom: 8,
+  },
   forgotPasswordText: { color: '#0066B2', fontWeight: '600' },
   signInButton: {
     padding: 16,
@@ -336,7 +352,11 @@ const styles = StyleSheet.create({
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     marginBottom: 16,
+    marginLeft: 10,
+    marginRight: 10,
+    paddingLeft: 10,
   },
   checkbox: {
     width: 20,

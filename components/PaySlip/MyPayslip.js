@@ -1,18 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  ScrollView,
+  Pressable,
 } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { Picker } from '@react-native-picker/picker';
-import axios from 'axios';
-
 import PayslipTemplate from './PayslipTemplate';
 
+// ==========================================
+// REUSABLE ARCHITECTURE: MODAL-BACKED DROPDOWN
+// ==========================================
+const NativeDropdown = ({ value, options, onSelect, placeholder, containerStyle }) => {
+  const buttonRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [layout, setLayout] = useState({ top: 0, left: 0, width: 0 });
+
+  const openDropdown = () => {
+    // Measure the exact position of this specific button on the physical screen
+    buttonRef.current.measure((fx, fy, width, height, pageX, pageY) => {
+      setLayout({
+        top: pageY + height + 4, // Dropdown appears exactly 4px below the button
+        left: pageX,
+        width: width,
+      });
+      setVisible(true);
+    });
+  };
+
+  // Find the label for the currently selected value
+  const selectedLabel = options.find(opt => opt.value === value)?.label || placeholder;
+
+  return (
+    <View style={containerStyle}>
+      <TouchableOpacity
+        ref={buttonRef}
+        activeOpacity={0.8}
+        style={styles.dropdownButton}
+        onPress={openDropdown}
+      >
+        <Text style={[styles.dropdownText, !value && { color: '#999' }]}>
+          {selectedLabel}
+        </Text>
+        <Text style={styles.arrow}>{visible ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+
+      {/* The Modal mounts a new native window above the screen */}
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)} // Handles Android hardware back button
+      >
+        {/* Invisible full-screen overlay catches outside taps */}
+        <Pressable style={styles.modalOverlay} onPress={() => setVisible(false)}>
+          <View
+            style={[
+              styles.dropdownList,
+              { top: layout.top, left: layout.left, width: layout.width },
+            ]}
+          >
+            <ScrollView bounces={false} style={{ maxHeight: 200 }}>
+              {options.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    onSelect(item.value);
+                    setVisible(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 const MyPayslip = () => {
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -23,7 +99,9 @@ const MyPayslip = () => {
   const [payslipResponse, setPayslipResponse] = useState(null);
   const [loading, setLoading] = useState(false); // spinner for fetch
   const [searched, setSearched] = useState(false); // track if user pressed search
-  const yearList = [2024, 2025, 2026, 2027];
+  
+  // Format arrays into {label, value} format for the NativeDropdown
+  const yearList = [2024, 2025, 2026, 2027].map(y => ({ label: y.toString(), value: y }));
 
   const monthList = [
     { value: 1, label: 'January' },
@@ -63,7 +141,6 @@ const MyPayslip = () => {
       }
     } catch (err) {
       setPayslipResponse(null);
-
       setApiMessage(
         err?.response?.data?.message ||
           'Unable to fetch payslip. Please try again.',
@@ -72,42 +149,31 @@ const MyPayslip = () => {
       setLoading(false);
     }
   };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Payslip</Text>
 
-      {/* FILTER ROW LIKE TRIPSCREEN */}
-
+      {/* FILTER ROW */}
       <View style={styles.filterRow}>
-        <View style={styles.dateBox}>
-          <Text style={styles.pickerText}>{year}</Text>
-          <Picker
-            selectedValue={year}
-            onValueChange={setYear}
-            style={{ flex: 1 }}
-            itemStyle={{ color: '#000', fontSize: 14 }}
-          >
-            {yearList.map(y => (
-              <Picker.Item key={y} label={y.toString()} value={y} />
-            ))}
-          </Picker>
-        </View>
+        
+        {/* YEAR DROPDOWN */}
+        <NativeDropdown
+          containerStyle={styles.dropdownWrapper}
+          value={year}
+          options={yearList}
+          onSelect={setYear}
+          placeholder="Year"
+        />
 
-        <View style={styles.dateBox}>
-          <Text style={styles.pickerText}>
-            {monthList.find(m => m.value === month)?.label || 'Month'}
-          </Text>
-          <Picker
-            selectedValue={month}
-            onValueChange={setMonth}
-            style={{ flex: 1 }}
-            itemStyle={{ color: '#000', fontSize: 14 }}
-          >
-            {monthList.map(m => (
-              <Picker.Item key={m.value} label={m.label} value={m.value} />
-            ))}
-          </Picker>
-        </View>
+        {/* MONTH DROPDOWN */}
+        <NativeDropdown
+          containerStyle={styles.dropdownWrapper}
+          value={month}
+          options={monthList}
+          onSelect={setMonth}
+          placeholder="Month"
+        />
 
         <TouchableOpacity style={styles.filterBtn} onPress={fetchPayslip}>
           <Icon name="search" size={18} color="#fff" />
@@ -115,7 +181,6 @@ const MyPayslip = () => {
       </View>
 
       {/* PAYSLIP BELOW */}
-
       <View style={styles.payslipArea}>
         {loading ? (
           <ActivityIndicator size="large" color="#6a9689" />
@@ -123,7 +188,6 @@ const MyPayslip = () => {
           <PayslipTemplate payslipResponse={payslipResponse} />
         ) : searched ? (
           <Text style={styles.noDataText}>
-            {' '}
             {apiMessage || 'No Payslip found'}
           </Text>
         ) : null}
@@ -140,56 +204,89 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 11,
   },
-
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#6a9689',
     marginBottom: 12,
-    paddingHorizontal: 135,
+    alignSelf: 'center', // Replaced static paddingHorizontal for better scaling
   },
-
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: '7%',
-  },
-
-  dateBox: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '42%',
-    borderWidth: 1,
-    borderColor: '#dcdcdc',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    color: '#000',
+    marginBottom: 10,
   },
-
   filterBtn: {
     backgroundColor: '#6a9689',
-    padding: 12,
+    height: 45, // Match dropdown height
+    width: 45,  // Make it a perfect square
     borderRadius: 8,
-    marginLeft: 2,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-
-  pickerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginRight: 2,
-  },
-
   payslipArea: {
     marginTop: 15,
     alignItems: 'center',
   },
-
   noDataText: {
     fontSize: 16,
     color: '#555',
     marginTop: 20,
+  },
+
+  // ==========================================
+  // NATIVE DROPDOWN STYLES
+  // ==========================================
+  dropdownWrapper: {
+    width: '42%',
+  },
+  dropdownButton: {
+    height: 45,
+    borderWidth: 1,
+    borderColor: '#dcdcdc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '600',
+  },
+  arrow: {
+    fontSize: 12,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdownList: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#222',
   },
 });
