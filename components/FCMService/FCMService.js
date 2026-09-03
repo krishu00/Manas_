@@ -8,8 +8,6 @@
 //   return enabled;
 // };
 
-
-
 import messaging from '@react-native-firebase/messaging';
 
 export const requestUserPermission = async () => {
@@ -32,6 +30,11 @@ export const requestUserPermission = async () => {
 
 export const getFCMToken = async () => {
   try {
+    // IMPORTANT for iOS
+    await messaging().registerDeviceForRemoteMessages();
+
+    console.log('✅ Device registered for remote messages');
+
     const token = await messaging().getToken();
 
     console.log('🔥 FCM TOKEN:', token);

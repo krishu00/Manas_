@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import DetailsSection from './DetailsSection';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UserDetailsScreen = () => {
   const [employeeData, setEmployeeData] = useState(null);
@@ -31,13 +32,129 @@ const UserDetailsScreen = () => {
 
     fetchLeaveTemplates();
   }, []);
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      try {
+        console.log(
+          '========== USER DETAILS REQUEST START =========='
+        );
 
+        const employeeId =
+          await AsyncStorage.getItem('employee_id');
+
+        const employeeName =
+          await AsyncStorage.getItem('employee_name');
+
+        const token =
+          await AsyncStorage.getItem('userToken');
+
+        console.log('employee_id:', employeeId);
+        console.log('employee_name:', employeeName);
+        console.log('token exists:', !!token);
+
+        if (token) {
+          console.log(
+            'token:',
+            `${token.substring(0, 20)}...`
+          );
+        }
+
+        console.log(
+          '=============================================='
+        );
+
+        const response = await apiMiddleware.get(
+          '/company/employee-details',
+          {
+            withCredentials: true,
+          }
+        );
+
+        console.log(
+          '========== EMPLOYEE API SUCCESS =========='
+        );
+
+        console.log(
+          'status:',
+          response?.status
+        );
+
+        console.log(
+          'response.data:',
+          JSON.stringify(
+            response?.data,
+            null,
+            2
+          )
+        );
+
+        console.log(
+          '=========================================='
+        );
+
+        const data =
+          response?.data?.data;
+
+        setEmployeeData(data);
+
+        setLeaveTemplatesName(
+          data?.official_details?.leave_template
+        );
+
+      } catch (err) {
+
+        console.log(
+          '========== EMPLOYEE API ERROR =========='
+        );
+
+        console.log(
+          'status:',
+          err?.response?.status
+        );
+
+        console.log(
+          'error data:',
+          JSON.stringify(
+            err?.response?.data,
+            null,
+            2
+          )
+        );
+
+        console.log(
+          'error message:',
+          err?.message
+        );
+
+        console.log(
+          'error config:',
+          err?.config
+        );
+
+        console.log(
+          '========================================='
+        );
+
+        setError(
+          err?.response?.data?.message ||
+          'Failed to fetch employee data.'
+        );
+
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployeeData();
+  }, []);
+  console.log("employeeData ......", employeeData)
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
         const response = await apiMiddleware.get(`/company/employee-details`, {
           withCredentials: true,
         });
+        console.log('response of users details : ', response.data.data);
         setLeaveTemplatesName(
           response.data.data.official_details?.leave_template,
         );

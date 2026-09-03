@@ -103,8 +103,10 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
           navigation.replace('FirstTimeLogin');
           return;
         }
-        console.log('login details from login page ', employee);
+        console.log('response?.data login  ', response?.data);
+        console.log('response?.data.employee  ', response?.data.employee
 
+        );
         if (employee && employee.employee_id && employee.company_code) {
           await AsyncStorage.setItem('employee_id', employee.employee_id);
 
@@ -112,6 +114,13 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
             'company_Code',
             employee.company_code.toString(),
           );
+
+          // Store employee name from login response
+          await AsyncStorage.setItem(
+            'employee_name',
+            employee.emp_name || '',
+          );
+
 
           await AsyncStorage.setItem('loginTime', Date.now().toString());
 
@@ -149,7 +158,37 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
             'ASYNC CHECK',
             await AsyncStorage.getItem('company_Code'),
           );
-          onLoginSuccess(employee.employee_id);
+          onLoginSuccess(token);
+
+
+          console.log(
+            '========== LOGIN STORAGE CHECK =========='
+          );
+
+          console.log(
+            'userToken:',
+            await AsyncStorage.getItem('userToken')
+          );
+
+          console.log(
+            'employee_id:',
+            await AsyncStorage.getItem('employee_id')
+          );
+
+          console.log(
+            'company_Code:',
+            await AsyncStorage.getItem('company_Code')
+          );
+
+          console.log(
+            'loginTime:',
+            await AsyncStorage.getItem('loginTime')
+          );
+
+          console.log(
+            '=employee_name========================================='
+            , await AsyncStorage.getItem('employee_name')
+          );
         } else {
           showPopup('Login Failed', 'Employee data missing in response.');
         }
@@ -221,7 +260,21 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
       colors={['#F3F4F3', '#E5EEE6', '#DEECDD']}
       style={styles.container}
     >
+      {/* <AppHeader
+        isBlogHeader
+        backTarget="BlogFeed"
+        showAuthButton={false}
+      /> */}
       <SafeAreaView style={styles.content}>
+        <TouchableOpacity
+          accessibilityLabel="Go back to feed"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <FontAwesome name="arrow-left" size={22} color="#6a9689" />
+        </TouchableOpacity>
+
         <Image source={logoImage} style={styles.logo} />
         <View style={styles.titleContainer}>
           <Text style={styles.subTitleText}>Welcome To Manas</Text>
@@ -300,6 +353,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingTop: 32,
     paddingBottom: 16,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 55,
+    left: 20,
+    zIndex: 10,
+
+    width: 50,
+    height: 50,
+
+    borderRadius: 25,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    backgroundColor: 'rgba(129, 186, 165, 0.15)',
   },
   logo: {
     width: 250,

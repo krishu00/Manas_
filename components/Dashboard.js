@@ -1,99 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import { View, StyleSheet, Alert } from 'react-native';
-// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// import Header from './Header/Header';
-// import HomeScreen from './Screens/HomeScreen';
-// import RequestScreen from './Screens/RequestsScreen';
-// import UserDetailsScreen from './UserDetailsScreen/UserDetailsScreen';
-// import Icon from 'react-native-vector-icons/FontAwesome';
-// import { TouchableWithoutFeedback } from 'react-native';
-// import {
-//   initSocket,
-//   getSocket,
-// } from '../components/socketService/socketService';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// const Tab = createBottomTabNavigator();
-
-// const Dashboard = ({ onLogoutSuccess }) => {
-//   const [closeDropdownFlag, setCloseDropdownFlag] = useState(false);
-
-//   const handleOutsidePress = () => setCloseDropdownFlag(true);
-//   useEffect(() => {
-//     const setupSocket = async () => {
-//       const employeeId = await AsyncStorage.getItem('employeeId');
-//       if (!employeeId) {
-//         console.warn('⚠️ employeeId not found in AsyncStorage');
-//         return;
-//       }
-
-//       const socket = initSocket(employeeId);
-
-//       // Example: test emit
-//       socket?.emit('test_event', { message: 'Hello from client' });
-//     };
-
-//     setupSocket();
-
-//     return () => {
-//       const socket = getSocket();
-//       if (socket) {
-//         console.log('🛑 Disconnecting socket on cleanup');
-//         socket.disconnect();
-//       }
-//     };
-//   }, []);
-
-//   return (
-//     <TouchableWithoutFeedback onPress={handleOutsidePress}>
-//       <View style={styles.container}>
-//         <Header
-//           onLogoutSuccess={onLogoutSuccess}
-//           closeDropdown={flag => setCloseDropdownFlag(flag)}
-//           closeDropdownFlag={closeDropdownFlag}
-//         />
-//         <Tab.Navigator
-//           screenOptions={({ route }) => ({
-//             headerShown: false,
-//             tabBarIcon: ({ focused }) => {
-//               let iconName;
-//               switch (route.name) {
-//                 case 'Home':
-//                   iconName = 'home';
-//                   break;
-//                 case 'Request':
-//                   iconName = 'envelope';
-//                   break;
-//                 case 'UserProfile':
-//                   iconName = 'list';
-//                   break;
-//                 default:
-//                   iconName = 'home';
-//               }
-//               const color = focused ? '#6a9689' : 'darkgray';
-//               return <Icon name={iconName} color={color} size={30} />;
-//             },
-//             tabBarActiveTintColor: '#6a9689',
-//             tabBarInactiveTintColor: 'darkgray',
-//             tabBarStyle: { height: 70, paddingBottom: 2, paddingTop: 5 },
-//           })}
-//         >
-//           <Tab.Screen name="Home" component={HomeScreen} />
-//           <Tab.Screen name="Request" component={RequestScreen} />
-//           <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
-//         </Tab.Navigator>
-//       </View>
-//     </TouchableWithoutFeedback>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1 },
-// });
-
-// export default Dashboard;
-
-// Dashboard.js
 import React, {
   useState,
   useRef,
@@ -119,6 +23,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MyPayslip from './PaySlip/MyPayslip';
+import BlogFeedScreen from './Screens/Blog/BlogFeedScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -215,9 +120,9 @@ const Dashboard = ({ onLogoutSuccess }) => {
                     case 'Request':
                       iconName = 'envelope';
                       break;
-                    // case 'Trips':
-                    //   iconName = 'location-arrow';
-                    //   break;
+                    case 'Blog':
+                      iconName = 'newspaper-o';
+                      break;
                     case 'UserProfile':
                       iconName = 'user';
                       break;
@@ -257,6 +162,14 @@ const Dashboard = ({ onLogoutSuccess }) => {
                 name="Trips"
                 component={TripScreen}
               /> */}
+              <Tab.Screen name="Blog">
+                {props => (
+                  <BlogFeedScreen
+                    {...props}
+                    embedded
+                  />
+                )}
+              </Tab.Screen>
               <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
               {/* Salary screen kept but hidden from tab bar */}
               <Tab.Screen
