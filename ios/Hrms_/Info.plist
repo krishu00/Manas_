@@ -32,7 +32,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Manas uses your location to verify your location when you clock in or clock out for attendance.</string>
+	<string>Manas uses your location when you upload a blog post to provide location information with your workplace post.</string>
 	<key>RCTNewArchEnabled</key>
 	<false/>
 	<key>UIAppFonts</key>
