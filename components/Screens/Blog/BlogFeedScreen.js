@@ -23,6 +23,7 @@ import {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { API_URL } from '@env';
 
 import {
   useFocusEffect,
@@ -48,8 +49,10 @@ import BlogCard from '../../blog/BlogCard';
    CONFIG
 ===================================================== */
 
-const API_BASE_URL =
-  'http://192.168.18.225:5050';
+// const API_BASE_URL =
+//   'http://192.168.18.225:5050';
+const API_BASE_URL = API_URL;
+
 
 /* =====================================================
    GET ALL BLOGS
