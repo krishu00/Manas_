@@ -18,7 +18,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Keyboard,
+  Keyboard, InputAccessoryView
 } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1284,7 +1284,7 @@ const BlogFeedScreen = ({
           COMMENT MODAL
       ============================================= */}
 
-      <Modal
+      {/* <Modal
         visible={
           commentModalVisible
         }
@@ -1293,8 +1293,9 @@ const BlogFeedScreen = ({
         onRequestClose={
           closeCommentModal
         }
+        statusBarTranslucent
       >
-        {/* OUTSIDE AREA */}
+        
 
         <Pressable
           style={
@@ -1304,7 +1305,7 @@ const BlogFeedScreen = ({
             closeCommentModal
           }
         >
-          {/* COMMENT SHEET */}
+          
 
           <Pressable
             style={
@@ -1325,7 +1326,7 @@ const BlogFeedScreen = ({
                 styles.commentSheetInner
               }
             >
-              {/* HEADER */}
+              
 
               <View
                 style={
@@ -1355,7 +1356,7 @@ const BlogFeedScreen = ({
                 </TouchableOpacity>
               </View>
 
-              {/* COMMENTS */}
+              
 
               {commentsLoading ? (
                 <View
@@ -1466,7 +1467,7 @@ const BlogFeedScreen = ({
                 />
               )}
 
-              {/* INPUT */}
+              
 
               <View
                 style={
@@ -1541,6 +1542,198 @@ const BlogFeedScreen = ({
             </KeyboardAvoidingView>
           </Pressable>
         </Pressable>
+      </Modal> */}
+
+      <Modal
+        visible={commentModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeCommentModal}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          {/* OUTSIDE AREA */}
+          <Pressable
+            style={styles.modalContainer}
+            onPress={closeCommentModal}
+          >
+            {/* COMMENT SHEET */}
+            <Pressable
+              style={styles.commentModal}
+              onPress={event => event.stopPropagation()}
+            >
+              {/* HEADER */}
+              <View style={styles.commentHeader}>
+                <Text style={styles.commentTitle}>
+                  Comments
+                </Text>
+
+                <TouchableOpacity
+                  onPress={closeCommentModal}
+                  hitSlop={{
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10,
+                  }}
+                >
+                  <Text style={styles.closeText}>
+                    ✕
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* COMMENTS */}
+              <View style={styles.commentsSection}>
+                {commentsLoading ? (
+                  <View
+                    style={styles.commentsLoadingContainer}
+                  >
+                    <ActivityIndicator
+                      size="small"
+                      color="#00503D"
+                    />
+
+                    <Text
+                      style={styles.commentsLoadingText}
+                    >
+                      Loading comments...
+                    </Text>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={comments}
+                    keyExtractor={(item, index) =>
+                      item?._id ||
+                      `comment-${index}`
+                    }
+                    style={styles.commentsListContainer}
+                    contentContainerStyle={
+                      comments.length === 0
+                        ? styles.emptyCommentsList
+                        : styles.commentsListContent
+                    }
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode={
+                      Platform.OS === 'ios'
+                        ? 'interactive'
+                        : 'on-drag'
+                    }
+                    ListEmptyComponent={
+                      <View style={styles.emptyCommentsBox}>
+                        <Text
+                          style={styles.emptyCommentsIcon}
+                        >
+                          💬
+                        </Text>
+
+                        <Text
+                          style={styles.emptyCommentsTitle}
+                        >
+                          No comments yet
+                        </Text>
+
+                        <Text
+                          style={styles.emptyCommentsText}
+                        >
+                          Be the first to comment on this
+                          blog.
+                        </Text>
+                      </View>
+                    }
+                    renderItem={({ item }) => (
+                      <View
+                        style={styles.commentBubble}
+                      >
+                        <Text
+                          style={styles.commentAuthor}
+                        >
+                          {getCommentAuthorName(item)}
+                        </Text>
+
+                        <Text
+                          style={styles.commentContent}
+                        >
+                          {item?.content ||
+                            item?.comment ||
+                            'No comment text'}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                )}
+              </View>
+
+              {/* INPUT */}
+              <View style={styles.commentInputWrap}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Write your comment..."
+                  placeholderTextColor="#999"
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  multiline
+                  maxLength={2000}
+                  textAlignVertical="top"
+                  returnKeyType="default"
+                  blurOnSubmit={false}
+                  inputAccessoryViewID="commentKeyboardAccessory"
+                />
+
+                <Text style={styles.characterCount}>
+                  {commentText.length}/2000
+                </Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.commentSubmitButton,
+                    (!commentText.trim() ||
+                      commentSubmitting) &&
+                    styles.commentSubmitButtonDisabled,
+                  ]}
+                  onPress={handleSubmitComment}
+                  disabled={
+                    !commentText.trim() ||
+                    commentSubmitting
+                  }
+                >
+                  {commentSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.commentSubmitText}>
+                      Post Comment
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+
+        {/* iOS KEYBOARD TOOLBAR */}
+        {Platform.OS === 'ios' && (
+          <InputAccessoryView
+            nativeID="commentKeyboardAccessory"
+          >
+            <View style={styles.keyboardAccessory}>
+              <TouchableOpacity
+                onPress={() => {
+                  Keyboard.dismiss();
+                }}
+                style={styles.keyboardDoneButton}
+              >
+                <Text style={styles.keyboardDoneText}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </InputAccessoryView>
+        )}
       </Modal>
 
       {/* =============================================
@@ -1707,35 +1900,63 @@ const styles =
     },
 
     /* COMMENT MODAL */
-
     modalContainer: {
       flex: 1,
       justifyContent: 'flex-end',
-      backgroundColor:
-        'rgba(0,0,0,0.45)',
+      backgroundColor: 'rgba(0,0,0,0.45)',
     },
-
+    // modalContainer: {
+    //   flex: 1,
+    //   justifyContent: 'flex-end',
+    //   backgroundColor:
+    //     'rgba(0,0,0,0.45)',
+    // },
+    keyboardAvoidingContainer: {
+      flex: 1,
+    },
     commentSheetInner: {
       width: '100%',
       maxHeight: '100%',
     },
 
     commentModal: {
-      backgroundColor:
-        '#FFFFFF',
+      backgroundColor: '#FFFFFF',
 
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
 
-      padding: 20,
+      paddingHorizontal: 20,
+      paddingTop: 20,
 
       paddingBottom:
-        Platform.OS === 'ios'
-          ? 30
-          : 20,
+        Platform.OS === 'ios' ? 20 : 20,
 
-      maxHeight: '85%',
+      width: '100%',
+
+      maxHeight: '90%',
+
+      flexShrink: 1,
     },
+    commentsSection: {
+      flexShrink: 1,
+      minHeight: 80,
+    },
+    // commentModal: {
+    //   backgroundColor:
+    //     '#FFFFFF',
+
+    //   borderTopLeftRadius: 20,
+    //   borderTopRightRadius: 20,
+
+    //   padding: 20,
+
+    //   paddingBottom:
+    //     Platform.OS === 'ios'
+    //       ? 30
+    //       : 20,
+
+    //   maxHeight: '85%',
+    // },
 
     commentHeader: {
       flexDirection: 'row',
@@ -1769,11 +1990,14 @@ const styles =
       fontSize: 13,
     },
 
+    // commentsListContainer: {
+    //   maxHeight: 320,
+    //   marginBottom: 12,
+    // },
     commentsListContainer: {
-      maxHeight: 320,
-      marginBottom: 12,
+      maxHeight: 300,
+      marginBottom: 10,
     },
-
     commentsListContent: {
       paddingBottom: 8,
     },
@@ -1834,8 +2058,8 @@ const styles =
     },
 
     commentInput: {
-      minHeight: 100,
-      maxHeight: 180,
+      minHeight: 90,
+      maxHeight: 150,
 
       borderWidth: 1,
       borderColor: '#DDDDDD',
@@ -1843,11 +2067,56 @@ const styles =
       borderRadius: 10,
 
       paddingHorizontal: 14,
-      paddingVertical: 12,
+      paddingTop: 12,
+      paddingBottom: 12,
 
       fontSize: 16,
       color: '#222222',
+
+      backgroundColor: '#FFFFFF',
     },
+    keyboardAccessory: {
+      height: 44,
+
+      backgroundColor: '#F7F7F7',
+
+      borderTopWidth: 1,
+      borderTopColor: '#DDDDDD',
+
+      flexDirection: 'row',
+
+      justifyContent: 'flex-end',
+
+      alignItems: 'center',
+
+      paddingHorizontal: 16,
+    },
+
+    keyboardDoneButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+
+    keyboardDoneText: {
+      color: '#00503D',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // commentInput: {
+    //   minHeight: 100,
+    //   maxHeight: 180,
+
+    //   borderWidth: 1,
+    //   borderColor: '#DDDDDD',
+
+    //   borderRadius: 10,
+
+    //   paddingHorizontal: 14,
+    //   paddingVertical: 12,
+
+    //   fontSize: 16,
+    //   color: '#222222',
+    // },
 
     characterCount: {
       textAlign: 'right',
