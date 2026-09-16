@@ -6,9 +6,8 @@ import { getAuthToken } from '../utils/auth';
 // CONFIG
 // =====================================================
 
-const API_BASE_URL = API_URL;
-
-console.log('🌐 Blog API Base URL:', API_BASE_URL);
+// const API_URL = API_URL;
+console.log('🌐 Blog API Base URL:', API_URL);
 
 
 // =====================================================
@@ -96,20 +95,20 @@ export const getAllBlogs = async () => {
   try {
     console.log(
       '🌐 GET:',
-      `${API_BASE_URL}/blog/all`,
+      `${API_URL}/blog/all`,
     );
 
     const response = await axios.get(
-      `${API_BASE_URL}/blog/all`,
+      `${API_URL}/blog/all`,
       {
         timeout: 15000,
       },
     );
 
-    console.log(
-      '✅ Get All Blogs Response:',
-      response.data,
-    );
+    // console.log(
+    //   '✅ Get All Blogs Response:',
+    //   response.data,
+    // );
 
     return response.data;
 
@@ -144,11 +143,11 @@ export const getBlogById = async blogId => {
 
     console.log(
       '🌐 GET:',
-      `${API_BASE_URL}/blog/${blogId}`,
+      `${API_URL}/blog/${blogId}`,
     );
 
     const response = await axios.get(
-      `${API_BASE_URL}/blog/${blogId}`,
+      `${API_URL}/blog/${blogId}`,
       {
         timeout: 15000,
       },
@@ -318,7 +317,7 @@ export const createBlog = async blogData => {
 
     console.log(
       '🌐 POST:',
-      `${API_BASE_URL}/blog/create`,
+      `${API_URL}/blog/create`,
     );
 
     console.log(
@@ -328,7 +327,7 @@ export const createBlog = async blogData => {
 
     const response =
       await axios.post(
-        `${API_BASE_URL}/blog/create`,
+        `${API_URL}/blog/create`,
 
         formData,
 
@@ -388,11 +387,11 @@ export const likeBlog = async blogId => {
 
     console.log(
       '🌐 POST:',
-      `${API_BASE_URL}/blog/${blogId}/like`,
+      `${API_URL}/blog/${blogId}/like`,
     );
 
     const response = await axios.post(
-      `${API_BASE_URL}/blog/${blogId}/like`,
+      `${API_URL}/blog/${blogId}/like`,
       {},
       {
         headers,
@@ -441,11 +440,11 @@ export const unlikeBlog = async blogId => {
 
     console.log(
       '🌐 DELETE:',
-      `${API_BASE_URL}/blog/${blogId}/like`,
+      `${API_URL}/blog/${blogId}/like`,
     );
 
     const response = await axios.delete(
-      `${API_BASE_URL}/blog/${blogId}/like`,
+      `${API_URL}/blog/${blogId}/like`,
       {
         headers,
         timeout: 15000,
@@ -490,11 +489,11 @@ export const getBlogComments = async blogId => {
 
     console.log(
       '🌐 GET:',
-      `${API_BASE_URL}/blog/${blogId}/comments`,
+      `${API_URL}/blog/${blogId}/comments`,
     );
 
     const response = await axios.get(
-      `${API_BASE_URL}/blog/${blogId}/comments`,
+      `${API_URL}/blog/${blogId}/comments`,
       {
         timeout: 15000,
       },
@@ -557,11 +556,11 @@ export const addBlogComment = async (
 
     console.log(
       '🌐 POST:',
-      `${API_BASE_URL}/blog/${blogId}/comment`,
+      `${API_URL}/blog/${blogId}/comment`,
     );
 
     const response = await axios.post(
-      `${API_BASE_URL}/blog/${blogId}/comment`,
+      `${API_URL}/blog/${blogId}/comment`,
       {
         content: comment,
       },
@@ -622,11 +621,11 @@ export const deleteBlogComment = async (
 
     console.log(
       '🌐 DELETE:',
-      `${API_BASE_URL}/blog/${blogId}/comment/${commentId}`,
+      `${API_URL}/blog/${blogId}/comment/${commentId}`,
     );
 
     const response = await axios.delete(
-      `${API_BASE_URL}/blog/${blogId}/comment/${commentId}`,
+      `${API_URL}/blog/${blogId}/comment/${commentId}`,
       {
         headers,
         timeout: 15000,
@@ -665,12 +664,12 @@ export const shareBlog = async blogId => {
 
     console.log(
       '🌐 Share Blog API:',
-      `${API_BASE_URL}/blog/${blogId}/share`,
+      `${API_URL}/blog/${blogId}/share`,
     );
 
     const response =
       await axios.post(
-        `${API_BASE_URL}/blog/${blogId}/share`,
+        `${API_URL}/blog/${blogId}/share`,
         {},
         {
           timeout: 15000,

@@ -24,7 +24,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_URL } from '@env';
-
 import {
   useFocusEffect,
   useRoute,
@@ -49,9 +48,7 @@ import BlogCard from '../../blog/BlogCard';
    CONFIG
 ===================================================== */
 
-// const API_BASE_URL =
-//   'http://192.168.18.225:5050';
-const API_BASE_URL = API_URL;
+
 
 
 /* =====================================================
@@ -73,7 +70,7 @@ const getAllBlogs = async () => {
     };
 
     const url =
-      `${API_BASE_URL}/blog/all`;
+      `${API_URL}/blog/all`;
 
     console.log(
       '🌐 Blog API:',
@@ -89,14 +86,14 @@ const getAllBlogs = async () => {
         },
       );
 
-    console.log(
-      '✅ Get All Blogs Response:',
-      JSON.stringify(
-        response.data,
-        null,
-        2,
-      ),
-    );
+    // console.log(
+    //   '✅ Get All Blogs Response:',
+    //   JSON.stringify(
+    //     response.data,
+    //     null,
+    //     2,
+    //   ),
+    // );
 
     return response.data;
   } catch (error) {
@@ -701,7 +698,7 @@ const BlogFeedScreen = ({
 
         const response =
           await axios.post(
-            `${API_BASE_URL}/blog/${selectedBlogId}/comment`,
+            `${API_URL}/blog/${selectedBlogId}/comment`,
             {
               content:
                 trimmedComment,
@@ -878,21 +875,21 @@ const BlogFeedScreen = ({
         try {
           setError(null);
 
-          console.log(
-            '📚 Fetching blogs...',
-          );
+          // console.log(
+          //   '📚 Fetching blogs...',
+          // );
 
           const response =
             await getAllBlogs();
 
-          console.log(
-            '📚 Raw API response:',
-            JSON.stringify(
-              response,
-              null,
-              2,
-            ),
-          );
+          // console.log(
+          //   '📚 Raw API response:',
+          //   JSON.stringify(
+          //     response,
+          //     null,
+          //     2,
+          //   ),
+          // );
 
           let blogList = [];
 
@@ -919,10 +916,10 @@ const BlogFeedScreen = ({
               response;
           }
 
-          console.log(
-            '📚 Blog count:',
-            blogList.length,
-          );
+          // console.log(
+          //   '📚 Blog count:',
+          //   blogList.length,
+          // );
 
           /*
            * VERY IMPORTANT DEBUGGING
@@ -930,21 +927,21 @@ const BlogFeedScreen = ({
 
           blogList.forEach(
             (blog, index) => {
-              console.log(
-                `📚 BLOG ${index} ID:`,
-                blog?._id ||
-                blog?.id ||
-                'MISSING',
-              );
+              // console.log(
+              //   `📚 BLOG ${index} ID:`,
+              //   blog?._id ||
+              //   blog?.id ||
+              //   'MISSING',
+              // );
 
-              console.log(
-                `📚 BLOG ${index}:`,
-                JSON.stringify(
-                  blog,
-                  null,
-                  2,
-                ),
-              );
+              // console.log(
+              //   `📚 BLOG ${index}:`,
+              //   JSON.stringify(
+              //     blog,
+              //     null,
+              //     2,
+              //   ),
+              // );
             },
           );
 
