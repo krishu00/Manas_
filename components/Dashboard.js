@@ -5,7 +5,7 @@ import React, {
   createContext,
   useContext,
 } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import {
   createBottomTabNavigator,
   useBottomTabBarHeight,
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   headerWrapper: {
     position: 'absolute',
-    top: 0,
+    top: Platform.OS == 'ios' ? 30 : 0,
     left: 0,
     right: 0,
 
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
 
   tabsWrapper: {
     flex: 1,
-    marginTop: 80, // header height
+    marginTop: Platform.OS == 'ios' ? 110 : 80, // header height
   },
 });
 
