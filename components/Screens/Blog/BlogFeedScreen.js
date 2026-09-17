@@ -26,7 +26,7 @@ import axios from 'axios';
 import { API_URL } from '@env';
 import {
   useFocusEffect,
-  useRoute,
+  useRoute, useNavigation
 } from '@react-navigation/native';
 
 import { navigationRef } from '../../../src/utils/NavigationService';
@@ -49,17 +49,27 @@ import {
   useBottomTabBarHeight,
 } from '@react-navigation/bottom-tabs';
 const Tab = createBottomTabNavigator();
-import RequestScreen from './Screens/RequestsScreen';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RequestScreen from '../../Screens/RequestsScreen';
+import HomeScreen from '../../Screens/HomeScreen';
+import UserDetailsScreen from '../../UserDetailsScreen/UserDetailsScreen';
+import MyPayslip from '../../PaySlip/MyPayslip';
+
 /* =====================================================
    CONFIG
 ===================================================== */
 
+const HomeScreenWrapper = ({ setTabNavigation }) => {
+  const navigation = useNavigation();
 
+  useEffect(() => {
+    console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
+    setTabNavigation(navigation);
+  }, []);
 
-
-/* =====================================================
-   GET ALL BLOGS
-===================================================== */
+  return <HomeScreen />;
+};
 
 const getAllBlogs = async () => {
   try {
@@ -92,14 +102,7 @@ const getAllBlogs = async () => {
         },
       );
 
-    // console.log(
-    //   '✅ Get All Blogs Response:',
-    //   JSON.stringify(
-    //     response.data,
-    //     null,
-    //     2,
-    //   ),
-    // );
+
 
     return response.data;
   } catch (error) {
@@ -114,9 +117,6 @@ const getAllBlogs = async () => {
   }
 };
 
-/* =====================================================
-   BLOG FEED SCREEN
-===================================================== */
 
 const BlogFeedScreen = ({
   navigation,
@@ -124,10 +124,7 @@ const BlogFeedScreen = ({
 
 }) => {
   const route = useRoute();
-
-  /* ===================================================
-     BLOG STATE
-  =================================================== */
+  const [tabNavigation, setTabNavigation] = useState(null);
 
   const [
     blogs,
@@ -149,9 +146,6 @@ const BlogFeedScreen = ({
     setError,
   ] = useState(null);
 
-  /* ===================================================
-     COMMENT STATE
-  =================================================== */
 
   const [
     commentModalVisible,
@@ -183,9 +177,6 @@ const BlogFeedScreen = ({
     setCommentsLoading,
   ] = useState(false);
 
-  /* ===================================================
-     POPUP
-  =================================================== */
 
   const [
     popup,
@@ -223,12 +214,6 @@ const BlogFeedScreen = ({
     });
   }, []);
 
-  /* ===================================================
-     GET BLOG ID
-     
-     IMPORTANT:
-     We keep ID extraction in ONE place.
-  =================================================== */
 
   const getBlogId = useCallback(
     blog => {
@@ -245,9 +230,6 @@ const BlogFeedScreen = ({
     [],
   );
 
-  /* ===================================================
-     LOAD COMMENTS
-  =================================================== */
 
   const loadComments = useCallback(
     async blogId => {
@@ -312,9 +294,6 @@ const BlogFeedScreen = ({
     [],
   );
 
-  /* ===================================================
-     OPEN COMMENT MODAL
-  =================================================== */
 
   const openCommentModal =
     useCallback(
@@ -368,9 +347,6 @@ const BlogFeedScreen = ({
       ],
     );
 
-  /* ===================================================
-     CLOSE COMMENT MODAL
-  =================================================== */
 
   const closeCommentModal =
     useCallback(() => {
@@ -397,43 +373,14 @@ const BlogFeedScreen = ({
       commentSubmitting,
     ]);
 
-  /* ===================================================
-     OPEN BLOG DETAIL
-  =================================================== */
 
   const handleOpenBlog = useCallback(
     blog => {
 
       const blogId = blog?._id;
 
-      console.log(
-        '================================',
-      );
-
-      console.log(
-        '📖 OPEN BLOG',
-      );
-
-      console.log(
-        'Full blog:',
-        JSON.stringify(blog, null, 2),
-      );
-
-      console.log(
-        'Blog ID:',
-        blogId,
-      );
-
-      console.log(
-        'Navigation exists:',
-        !!navigation,
-      );
 
       if (!blogId) {
-
-        console.log(
-          '❌ Cannot open BlogDetail: blog ID missing',
-        );
 
         showPopup(
           'Unable to Open Blog',
@@ -457,9 +404,6 @@ const BlogFeedScreen = ({
     ],
   );
 
-  /* ===================================================
-     LIKE / UNLIKE
-  =================================================== */
 
   const handleLikePress =
     useCallback(
@@ -646,9 +590,6 @@ const BlogFeedScreen = ({
       ],
     );
 
-  /* ===================================================
-     SUBMIT COMMENT
-  =================================================== */
 
   const handleSubmitComment =
     async () => {
@@ -836,10 +777,6 @@ const BlogFeedScreen = ({
       }
     };
 
-  /* ===================================================
-     CREATE BLOG
-  =================================================== */
-
   const handleCreateBlog =
     async () => {
       try {
@@ -871,9 +808,6 @@ const BlogFeedScreen = ({
       }
     };
 
-  /* ===================================================
-     FETCH BLOGS
-  =================================================== */
 
   const fetchBlogs =
     useCallback(
@@ -881,21 +815,11 @@ const BlogFeedScreen = ({
         try {
           setError(null);
 
-          // console.log(
-          //   '📚 Fetching blogs...',
-          // );
 
           const response =
             await getAllBlogs();
 
-          // console.log(
-          //   '📚 Raw API response:',
-          //   JSON.stringify(
-          //     response,
-          //     null,
-          //     2,
-          //   ),
-          // );
+
 
           let blogList = [];
 
@@ -922,34 +846,9 @@ const BlogFeedScreen = ({
               response;
           }
 
-          // console.log(
-          //   '📚 Blog count:',
-          //   blogList.length,
-          // );
 
-          /*
-           * VERY IMPORTANT DEBUGGING
-           */
 
-          blogList.forEach(
-            (blog, index) => {
-              // console.log(
-              //   `📚 BLOG ${index} ID:`,
-              //   blog?._id ||
-              //   blog?.id ||
-              //   'MISSING',
-              // );
 
-              // console.log(
-              //   `📚 BLOG ${index}:`,
-              //   JSON.stringify(
-              //     blog,
-              //     null,
-              //     2,
-              //   ),
-              // );
-            },
-          );
 
           const normalizedBlogs =
             blogList.map(
@@ -994,17 +893,11 @@ const BlogFeedScreen = ({
       [],
     );
 
-  /* ===================================================
-     INITIAL LOAD
-  =================================================== */
 
   useEffect(() => {
     fetchBlogs();
   }, [fetchBlogs]);
 
-  /* ===================================================
-     REFRESH WHEN RETURNING TO SCREEN
-  =================================================== */
 
   useFocusEffect(
     useCallback(
@@ -1024,9 +917,6 @@ const BlogFeedScreen = ({
     ),
   );
 
-  /* ===================================================
-     REFRESH
-  =================================================== */
 
   const handleRefresh =
     () => {
@@ -1034,9 +924,7 @@ const BlogFeedScreen = ({
       fetchBlogs();
     };
 
-  /* ===================================================
-     LOADING
-  =================================================== */
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
@@ -1074,9 +962,6 @@ const BlogFeedScreen = ({
     );
   }
 
-  /* ===================================================
-     ERROR
-  =================================================== */
 
   if (error) {
     return (
@@ -1141,9 +1026,6 @@ const BlogFeedScreen = ({
     );
   }
 
-  /* ===================================================
-     MAIN SCREEN
-  =================================================== */
 
   return (
     <View
@@ -1177,9 +1059,6 @@ const BlogFeedScreen = ({
           styles.content
         }
       >
-        {/* ===========================================
-            HEADER
-        =========================================== */}
 
         <Text
           style={
@@ -1198,9 +1077,6 @@ const BlogFeedScreen = ({
           in Manas
         </Text>
 
-        {/* ===========================================
-            EMPTY
-        =========================================== */}
 
         {blogs.length === 0 ? (
           <View
@@ -1234,9 +1110,6 @@ const BlogFeedScreen = ({
             </Text>
           </View>
         ) : (
-          /* =========================================
-             BLOG LIST
-          ========================================= */
 
           blogs.map(
             (
@@ -1266,9 +1139,6 @@ const BlogFeedScreen = ({
         )}
       </ScrollView>
 
-      {/* =============================================
-          CREATE BLOG
-      ============================================= */}
 
       <TouchableOpacity
         style={styles.fab}
@@ -1286,10 +1156,7 @@ const BlogFeedScreen = ({
         </Text>
       </TouchableOpacity>
 
-      {/* =============================================
-          COMMENT MODAL
-      ============================================= */}
- 
+
 
       <Modal
         visible={commentModalVisible}
@@ -1416,7 +1283,7 @@ const BlogFeedScreen = ({
                 )}
               </View>
 
-              {/* INPUT */}
+
               <View style={styles.commentInputWrap}>
                 <TextInput
                   style={styles.commentInput}
@@ -1462,7 +1329,7 @@ const BlogFeedScreen = ({
           </Pressable>
         </KeyboardAvoidingView>
 
-        {/* iOS KEYBOARD TOOLBAR */}
+
         {Platform.OS === 'ios' && (
           <InputAccessoryView
             nativeID="commentKeyboardAccessory"
@@ -1483,9 +1350,7 @@ const BlogFeedScreen = ({
         )}
       </Modal>
 
-      {/* =============================================
-          POPUP
-      ============================================= */}
+
 
       {popup.visible && (
         <Popup
@@ -1507,98 +1372,80 @@ const BlogFeedScreen = ({
 
 
 
+      <View style={styles.tabsWrapper}>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarIcon: ({ focused }) => {
+              let iconName;
 
+              switch (route.name) {
+                case 'Home':
+                  iconName = 'home';
+                  break;
+                case 'Request':
+                  iconName = 'envelope';
+                  break;
+                case 'Blog':
+                  iconName = 'newspaper-o';
+                  break;
+                case 'UserProfile':
+                  iconName = 'user';
+                  break;
+              }
 
-
-
-
-
-
-        <View style={styles.tabsWrapper}>
-            <Tab.Navigator
-              screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarIcon: ({ focused }) => {
-                  let iconName;
-
-                  switch (route.name) {
-                    case 'Home':
-                      iconName = 'home';
-                      break;
-                    case 'Request':
-                      iconName = 'envelope';
-                      break;
-                    case 'Blog':
-                      iconName = 'newspaper-o';
-                      break;
-                    case 'UserProfile':
-                      iconName = 'user';
-                      break;
-                  }
-
-                  const color = focused ? '#6a9689' : 'darkgray';
-                  return <Icon name={iconName} color={color} size={30} />;
-                },
-                tabBarActiveTintColor: '#6a9689',
-                tabBarInactiveTintColor: 'darkgray',
-                tabBarStyle: [
-                  {
-                    height: 55 + insets.bottom,
-                    paddingBottom: 10 + insets.bottom,
-                    paddingTop: 5,
-                  },
-                ],
-              })}
-            >
-              <Tab.Screen name="Home">
-                {props => (
-                  <HomeScreenWrapper
-                    {...props}
-                    setTabNavigation={setTabNavigation}
-                  />
-                )}
-              </Tab.Screen>
-              <Tab.Screen
-                name="Request"
-                component={RequestScreen}
-                initialParams={{
-                  selectedRequestId: null,
-                  defaultTab: 'My Requests',
-                }}
+              const color = focused ? '#6a9689' : 'darkgray';
+              return <Icon name={iconName} color={color} size={30} />;
+            },
+            tabBarActiveTintColor: '#6a9689',
+            tabBarInactiveTintColor: 'darkgray',
+            tabBarStyle: [
+              {
+                height: 55 + insets.bottom,
+                paddingBottom: 10 + insets.bottom,
+                paddingTop: 5,
+              },
+            ],
+          })}
+        >
+          <Tab.Screen name="Home">
+            {props => (
+              <HomeScreenWrapper
+                {...props}
+                setTabNavigation={setTabNavigation}
               />
-              {/* <Tab.Screen
-                name="Trips"
-                component={TripScreen}
-              /> */}
-              {/* <Tab.Screen name="Blog">
-                {props => (
-                  <BlogFeedScreen
-                    {...props}
-                    embedded
-                  />
-                )}
-              </Tab.Screen> */}
-              <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
-              {/* Salary screen kept but hidden from tab bar */}
-              <Tab.Screen
-                name="Salary"
-                component={MyPayslip}
-                options={{
-                  headerShown: false,
-                  tabBarItemStyle: { display: 'none' }, // ✅ IMPORTANT
-                }}
-              />
-            </Tab.Navigator>
-          </View>
+            )}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Request"
+            component={RequestScreen}
+            initialParams={{
+              selectedRequestId: null,
+              defaultTab: 'My Requests',
+            }}
+          />
+
+          <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
+          {/* Salary screen kept but hidden from tab bar */}
+          <Tab.Screen
+            name="Salary"
+            component={MyPayslip}
+            options={{
+              headerShown: false,
+              tabBarItemStyle: { display: 'none' }, // ✅ IMPORTANT
+            }}
+          />
+        </Tab.Navigator>
+      </View>
+
+
     </View>
   );
 };
 
 export default BlogFeedScreen;
 
-/* =====================================================
-   STYLES
-===================================================== */
 
 const styles =
   StyleSheet.create({
@@ -1610,7 +1457,7 @@ const styles =
 
     content: {
       padding: 16,
-      paddingBottom: 110,
+      paddingBottom: 130,
     },
 
     /* HEADER */
@@ -1628,7 +1475,7 @@ const styles =
       marginBottom: 18,
     },
 
-    /* CENTER */
+
 
     centerContainer: {
       flex: 1,
@@ -1643,7 +1490,7 @@ const styles =
       color: '#66777D',
     },
 
-    /* ERROR */
+
 
     errorIcon: {
       fontSize: 40,
@@ -1677,7 +1524,7 @@ const styles =
       fontWeight: '600',
     },
 
-    /* EMPTY */
+
 
     emptyContainer: {
       alignItems: 'center',
@@ -1703,12 +1550,12 @@ const styles =
       textAlign: 'center',
     },
 
-    /* FAB */
+
 
     fab: {
       position: 'absolute',
       right: 20,
-      bottom: 25,
+      bottom: 78,
       width: 56,
       height: 56,
       borderRadius: 28,
@@ -1732,18 +1579,13 @@ const styles =
       fontWeight: '700',
     },
 
-    /* COMMENT MODAL */
+
     modalContainer: {
       flex: 1,
       justifyContent: 'flex-end',
       backgroundColor: 'rgba(0,0,0,0.45)',
     },
-    // modalContainer: {
-    //   flex: 1,
-    //   justifyContent: 'flex-end',
-    //   backgroundColor:
-    //     'rgba(0,0,0,0.45)',
-    // },
+
     keyboardAvoidingContainer: {
       flex: 1,
     },
@@ -1774,22 +1616,6 @@ const styles =
       flexShrink: 1,
       minHeight: 80,
     },
-    // commentModal: {
-    //   backgroundColor:
-    //     '#FFFFFF',
-
-    //   borderTopLeftRadius: 20,
-    //   borderTopRightRadius: 20,
-
-    //   padding: 20,
-
-    //   paddingBottom:
-    //     Platform.OS === 'ios'
-    //       ? 30
-    //       : 20,
-
-    //   maxHeight: '85%',
-    // },
 
     commentHeader: {
       flexDirection: 'row',
@@ -1823,10 +1649,6 @@ const styles =
       fontSize: 13,
     },
 
-    // commentsListContainer: {
-    //   maxHeight: 320,
-    //   marginBottom: 12,
-    // },
     commentsListContainer: {
       maxHeight: 300,
       marginBottom: 10,
@@ -1935,21 +1757,6 @@ const styles =
       fontSize: 16,
       fontWeight: '600',
     },
-    // commentInput: {
-    //   minHeight: 100,
-    //   maxHeight: 180,
-
-    //   borderWidth: 1,
-    //   borderColor: '#DDDDDD',
-
-    //   borderRadius: 10,
-
-    //   paddingHorizontal: 14,
-    //   paddingVertical: 12,
-
-    //   fontSize: 16,
-    //   color: '#222222',
-    // },
 
     characterCount: {
       textAlign: 'right',
@@ -1981,4 +1788,8 @@ const styles =
       fontSize: 15,
       fontWeight: '700',
     },
+    tabsWrapper: {
+  flex: 1,
+  minHeight: 0,
+},
   });
