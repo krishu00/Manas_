@@ -14,9 +14,13 @@ import {
   Modal,
   FlatList,
   KeyboardAvoidingView,
-  Platform,
+  Platform, StatusBar
 } from 'react-native';
 
+import {
+  SafeAreaView,
+  useSafeAreaInsets
+} from 'react-native-safe-area-context';
 import BlogImage from '../../common/BlogImage';
 import CommentItem from './CommentItem';
 import CommentInput from './CommentInput';
@@ -141,7 +145,7 @@ const BlogDetailScreen = ({
   route,
   navigation,
 }) => {
-
+const insets = useSafeAreaInsets();
   const blogId =
     route?.params?.blogId;
 
@@ -1171,15 +1175,16 @@ const BlogDetailScreen = ({
 
   return (
 
-    <View
+    <SafeAreaView
       style={styles.safeArea}
+      edges={['top', 'left', 'right', 'bottom']}
     >
 
       {/* ================================================= */}
       {/* HEADER */}
       {/* ================================================= */}
 
-      <View
+      {/* <View
         style={styles.topBar}
       >
 
@@ -1203,14 +1208,34 @@ const BlogDetailScreen = ({
 
         </TouchableOpacity>
 
+      </View> */}
+
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          hitSlop={{
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
+          }}
+        >
+          <Text style={styles.backIcon}>
+            ‹
+          </Text>
+
+          <Text style={styles.backLabel}>
+            Blog
+          </Text>
+        </TouchableOpacity>
       </View>
-
-
       {/* ================================================= */}
       {/* BLOG */}
       {/* ================================================= */}
 
-      <ScrollView
+      {/* <ScrollView
         style={styles.flex}
         contentContainerStyle={
           styles.content
@@ -1264,18 +1289,12 @@ const BlogDetailScreen = ({
         </Text>
 
 
-        {/* ================================================= */}
-        {/* ACTIONS */}
-        {/* ================================================= */}
-
+         
         <View
           style={styles.actions}
         >
 
-          {/* ================================================= */}
-          {/* LIKE */}
-          {/* ================================================= */}
-
+         
           <TouchableOpacity
             style={
               styles.actionButton
@@ -1310,11 +1329,7 @@ const BlogDetailScreen = ({
 
           </TouchableOpacity>
 
-
-          {/* ================================================= */}
-          {/* COMMENTS */}
-          {/* ================================================= */}
-
+ 
           <TouchableOpacity
             style={
               styles.actionButton
@@ -1344,53 +1359,119 @@ const BlogDetailScreen = ({
 
           </TouchableOpacity>
 
+        </View>
 
-          {/* ================================================= */}
-          {/* SHARE */}
-          {/* ================================================= */}
+      </ScrollView> */}
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* BLOG TITLE */}
+        <Text style={styles.title}>
+          {title}
+        </Text>
 
-          {/* <TouchableOpacity
-            style={
-              styles.actionButton
-            }
-            onPress={() =>
-              showPopup(
-                'Share',
-                'Share functionality will be available soon.',
-              )
-            }
+        {/* AUTHOR / DATE */}
+        <View style={styles.metaRow}>
+          <View style={styles.authorAvatar}>
+            <Text style={styles.authorAvatarText}>
+              {authorName?.charAt(0)?.toUpperCase() || 'M'}
+            </Text>
+          </View>
+
+          <View style={styles.metaInfo}>
+            <Text style={styles.author}>
+              {authorName}
+            </Text>
+
+            <Text style={styles.date}>
+              {formatDate(blog?.createdAt)}
+            </Text>
+          </View>
+        </View>
+
+        {/* BLOG IMAGE */}
+        {blog?.image ? (
+          <BlogImage
+            uri={blog.image}
+            style={styles.image}
+          />
+        ) : null}
+
+        {/* DESCRIPTION */}
+        <View style={styles.articleCard}>
+          <Text style={styles.description}>
+            {description}
+          </Text>
+        </View>
+
+        {/* ACTIONS */}
+        <View style={styles.actionsCard}>
+
+          {/* LIKE */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleToggleLike}
+            disabled={likeBusy}
             activeOpacity={0.7}
           >
-
-            <Text
-              style={
-                styles.actionIcon
-              }
+            <View
+              style={[
+                styles.actionIconContainer,
+                isLiked && styles.actionIconContainerActive,
+              ]}
             >
-              ↗
-            </Text>
+              <Text style={styles.actionIcon}>
+                {isLiked ? '♥' : '♡'}
+              </Text>
+            </View>
 
+            <View>
+              <Text style={styles.actionText}>
+                {likesCount}
+              </Text>
 
-            <Text
-              style={
-                styles.actionText
-              }
-            >
-              Share
-            </Text>
+              <Text style={styles.actionLabel}>
+                Likes
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-          </TouchableOpacity> */}
+          {/* COMMENTS */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={openComments}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionIconContainer}>
+              <Text style={styles.actionIcon}>
+                💬
+              </Text>
+            </View>
+
+            <View>
+              <Text style={styles.actionText}>
+                {commentsCount}
+              </Text>
+
+              <Text style={styles.actionLabel}>
+                Comments
+              </Text>
+            </View>
+          </TouchableOpacity>
 
         </View>
 
+        {/* BOTTOM SPACE */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
-
 
       {/* ================================================= */}
       {/* COMMENTS BOTTOM SHEET */}
       {/* ================================================= */}
 
-      <Modal
+      {/* <Modal
         visible={
           commentsVisible
         }
@@ -1411,11 +1492,7 @@ const BlogDetailScreen = ({
               : 'height'
           }
         >
-
-          {/* ================================================= */}
-          {/* BACKDROP */}
-          {/* ================================================= */}
-
+ 
           <TouchableOpacity
             style={
               styles.backdrop
@@ -1427,31 +1504,21 @@ const BlogDetailScreen = ({
           />
 
 
-          {/* ================================================= */}
-          {/* COMMENT SHEET */}
-          {/* ================================================= */}
-
+           
           <View
             style={
               styles.commentSheet
             }
           >
 
-            {/* ================================================= */}
-            {/* DRAG HANDLE */}
-            {/* ================================================= */}
-
+           
             <View
               style={
                 styles.dragHandle
               }
             />
 
-
-            {/* ================================================= */}
-            {/* HEADER */}
-            {/* ================================================= */}
-
+ 
             <View
               style={
                 styles.commentHeader
@@ -1495,11 +1562,7 @@ const BlogDetailScreen = ({
 
             </View>
 
-
-            {/* ================================================= */}
-            {/* COMMENTS */}
-            {/* ================================================= */}
-
+ 
             {commentsLoading ? (
 
               <View
@@ -1619,11 +1682,7 @@ const BlogDetailScreen = ({
 
             )}
 
-
-            {/* ================================================= */}
-            {/* COMMENT INPUT */}
-            {/* ================================================= */}
-
+ 
             <CommentInput
               onSubmit={
                 handleAddComment
@@ -1637,9 +1696,149 @@ const BlogDetailScreen = ({
 
         </KeyboardAvoidingView>
 
-      </Modal>
+      </Modal> */}
 
+     <Modal
+  visible={commentsVisible}
+  transparent
+  animationType="slide"
+  onRequestClose={closeComments}
+>
+  <KeyboardAvoidingView
+    style={styles.keyboardContainer}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    keyboardVerticalOffset={0}
+  >
+    <View style={styles.modalContainer}>
 
+      {/* DARK OVERLAY */}
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={closeComments}
+      />
+
+      {/* COMMENTS SHEET */}
+      <View style={styles.commentSheet}>
+
+        {/* HANDLE */}
+        <View style={styles.dragHandle} />
+
+        {/* HEADER */}
+        <View style={styles.commentHeader}>
+
+          <View style={styles.headerSide} />
+
+          <Text style={styles.commentHeaderTitle}>
+            Comments
+          </Text>
+
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={closeComments}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.closeText}>
+              ×
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+
+        {/* COMMENTS */}
+        <View style={styles.commentsArea}>
+
+          {commentsLoading ? (
+
+            <View style={styles.commentsLoading}>
+
+              <ActivityIndicator
+                size="small"
+                color={COLORS.primary}
+              />
+
+              <Text style={styles.loadingCommentsText}>
+                Loading comments...
+              </Text>
+
+            </View>
+
+          ) : (
+
+            <FlatList
+              data={comments}
+
+              keyExtractor={(item, index) =>
+                item?._id || `comment-${index}`
+              }
+
+              renderItem={({ item }) => (
+                <CommentItem
+                  comment={item}
+                  timeAgo={timeAgo(item?.createdAt)}
+                  onDelete={
+                    item?._id
+                      ? () => handleDeleteComment(item._id)
+                      : undefined
+                  }
+                />
+              )}
+
+              contentContainerStyle={
+                comments.length === 0
+                  ? styles.emptyCommentsContent
+                  : styles.commentsList
+              }
+
+              showsVerticalScrollIndicator={false}
+
+              keyboardShouldPersistTaps="handled"
+
+              keyboardDismissMode="interactive"
+
+              ListEmptyComponent={
+                <View style={styles.emptyComments}>
+
+                  <Text style={styles.emptyCommentsIcon}>
+                    💬
+                  </Text>
+
+                  <Text style={styles.emptyCommentsTitle}>
+                    No comments yet
+                  </Text>
+
+                  <Text style={styles.emptyCommentsText}>
+                    Be the first to comment on this blog.
+                  </Text>
+
+                </View>
+              }
+            />
+
+          )}
+
+        </View>
+
+        {/* INPUT */}
+        <View
+          style={[
+            styles.commentInputWrapper,
+            {
+              paddingBottom: Math.max(insets.bottom, 10),
+            },
+          ]}
+        >
+          <CommentInput
+            onSubmit={handleAddComment}
+            submitting={commentSubmitting}
+          />
+        </View>
+
+      </View>
+
+    </View>
+  </KeyboardAvoidingView>
+</Modal>
       {/* ================================================= */}
       {/* POPUP */}
       {/* ================================================= */}
@@ -1666,7 +1865,7 @@ const BlogDetailScreen = ({
 
       )}
 
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -1675,445 +1874,844 @@ const BlogDetailScreen = ({
 // STYLES
 // =====================================================
 
-const styles =
-  StyleSheet.create({
+// const styles =
+//   StyleSheet.create({
 
-    safeArea: {
-      flex: 1,
-      backgroundColor:
-        COLORS.surface,
-    },
+//     safeArea: {
+//       flex: 1,
+//       backgroundColor:
+//         COLORS.surface,
+//     },
 
 
-    flex: {
-      flex: 1,
-    },
+//     flex: {
+//       flex: 1,
+//     },
 
 
-    // =================================================
-    // TOP BAR
-    // =================================================
+//     // =================================================
+//     // TOP BAR
+//     // =================================================
 
-    topBar: {
-      paddingHorizontal:
-        SPACING.lg,
+//     topBar: {
+//       paddingHorizontal:
+//         SPACING.lg,
 
-      paddingVertical:
-        SPACING.md,
+//       paddingVertical:
+//         SPACING.md,
 
-      borderBottomWidth:
-        1,
+//       borderBottomWidth:
+//         1,
 
-      borderBottomColor:
-        COLORS.border,
+//       borderBottomColor:
+//         COLORS.border,
 
-      backgroundColor:
-        COLORS.surface,
-    },
+//       backgroundColor:
+//         COLORS.surface,
+//     },
 
 
-    backText: {
-      fontSize:
-        FONT.md,
+//     backText: {
+//       fontSize:
+//         FONT.md,
 
-      fontWeight:
-        '700',
+//       fontWeight:
+//         '700',
 
-      color:
-        COLORS.text,
-    },
+//       color:
+//         COLORS.text,
+//     },
 
 
-    // =================================================
-    // BLOG
-    // =================================================
+//     // =================================================
+//     // BLOG
+//     // =================================================
 
-    content: {
-      padding:
-        SPACING.lg,
+//     content: {
+//       padding:
+//         SPACING.lg,
 
-      paddingBottom:
-        100,
-    },
+//       paddingBottom:
+//         100,
+//     },
 
 
-    title: {
-      fontSize:
-        FONT.xxl,
+//     title: {
+//       fontSize:
+//         FONT.xxl,
 
-      fontWeight:
-        '800',
+//       fontWeight:
+//         '800',
 
-      color:
-        COLORS.text,
+//       color:
+//         COLORS.text,
 
-      marginBottom:
-        6,
-    },
+//       marginBottom:
+//         6,
+//     },
 
 
-    author: {
-      fontSize:
-        FONT.md,
+//     author: {
+//       fontSize:
+//         FONT.md,
 
-      fontWeight:
-        '600',
+//       fontWeight:
+//         '600',
 
-      color:
-        COLORS.primaryLight,
-    },
+//       color:
+//         COLORS.primaryLight,
+//     },
 
 
-    date: {
-      fontSize:
-        FONT.sm,
+//     date: {
+//       fontSize:
+//         FONT.sm,
 
-      color:
-        COLORS.textMuted,
+//       color:
+//         COLORS.textMuted,
 
-      marginTop:
-        4,
+//       marginTop:
+//         4,
 
-      marginBottom:
-        SPACING.lg,
-    },
+//       marginBottom:
+//         SPACING.lg,
+//     },
 
 
-    image: {
-      width:
-        '100%',
+//     image: {
+//       width:
+//         '100%',
 
-      height:
-        220,
+//       height:
+//         220,
 
-      borderRadius:
-        12,
+//       borderRadius:
+//         12,
 
-      marginBottom:
-        SPACING.lg,
-    },
+//       marginBottom:
+//         SPACING.lg,
+//     },
 
 
-    description: {
-      fontSize:
-        FONT.md,
+//     description: {
+//       fontSize:
+//         FONT.md,
 
-      lineHeight:
-        23,
+//       lineHeight:
+//         23,
 
-      color:
-        COLORS.text,
+//       color:
+//         COLORS.text,
 
-      marginBottom:
-        SPACING.lg,
-    },
+//       marginBottom:
+//         SPACING.lg,
+//     },
 
 
-    // =================================================
-    // ACTIONS
-    // =================================================
+//     // =================================================
+//     // ACTIONS
+//     // =================================================
 
-    actions: {
-      flexDirection:
-        'row',
+//     actions: {
+//       flexDirection:
+//         'row',
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      borderTopWidth:
-        1,
+//       borderTopWidth:
+//         1,
 
-      borderBottomWidth:
-        1,
+//       borderBottomWidth:
+//         1,
 
-      borderColor:
-        COLORS.border,
+//       borderColor:
+//         COLORS.border,
 
-      paddingVertical:
-        SPACING.md,
+//       paddingVertical:
+//         SPACING.md,
 
-      justifyContent:
-        'space-around',
-    },
+//       justifyContent:
+//         'space-around',
+//     },
 
 
-    actionButton: {
-      flexDirection:
-        'row',
+//     actionButton: {
+//       flexDirection:
+//         'row',
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      paddingHorizontal:
-        SPACING.md,
+//       paddingHorizontal:
+//         SPACING.md,
 
-      paddingVertical:
-        6,
-    },
+//       paddingVertical:
+//         6,
+//     },
 
 
-    actionIcon: {
-      fontSize:
-        21,
+//     actionIcon: {
+//       fontSize:
+//         21,
 
-      marginRight:
-        6,
-    },
+//       marginRight:
+//         6,
+//     },
 
 
-    actionText: {
-      fontSize:
-        FONT.sm,
+//     actionText: {
+//       fontSize:
+//         FONT.sm,
 
-      fontWeight:
-        '700',
+//       fontWeight:
+//         '700',
 
-      color:
-        COLORS.text,
-    },
+//       color:
+//         COLORS.text,
+//     },
 
 
-    // =================================================
-    // MODAL
-    // =================================================
+//     // =================================================
+//     // MODAL
+//     // =================================================
 
-    modalContainer: {
-      flex: 1,
+//     modalContainer: {
+//       flex: 1,
 
-      justifyContent:
-        'flex-end',
-    },
+//       justifyContent:
+//         'flex-end',
+//     },
 
 
-    backdrop: {
-      ...StyleSheet.absoluteFillObject,
+//     backdrop: {
+//       ...StyleSheet.absoluteFillObject,
 
-      backgroundColor:
-        'rgba(0,0,0,0.55)',
-    },
+//       backgroundColor:
+//         'rgba(0,0,0,0.55)',
+//     },
 
 
-    // =================================================
-    // COMMENT SHEET
-    // =================================================
+//     // =================================================
+//     // COMMENT SHEET
+//     // =================================================
 
-    commentSheet: {
-      height:
-        '78%',
+//     commentSheet: {
+//       height:
+//         '78%',
 
-      backgroundColor:
-        '#171A1D',
+//       backgroundColor:
+//         '#171A1D',
 
-      borderTopLeftRadius:
-        24,
+//       borderTopLeftRadius:
+//         24,
 
-      borderTopRightRadius:
-        24,
+//       borderTopRightRadius:
+//         24,
 
-      overflow:
-        'hidden',
-    },
+//       overflow:
+//         'hidden',
+//     },
 
 
-    dragHandle: {
-      width:
-        44,
+//     dragHandle: {
+//       width:
+//         44,
 
-      height:
-        4,
+//       height:
+//         4,
 
-      borderRadius:
-        2,
+//       borderRadius:
+//         2,
 
-      backgroundColor:
-        '#858A8F',
+//       backgroundColor:
+//         '#858A8F',
 
-      alignSelf:
-        'center',
+//       alignSelf:
+//         'center',
 
-      marginTop:
-        10,
+//       marginTop:
+//         10,
 
-      marginBottom:
-        8,
-    },
+//       marginBottom:
+//         8,
+//     },
 
 
-    // =================================================
-    // COMMENT HEADER
-    // =================================================
+//     // =================================================
+//     // COMMENT HEADER
+//     // =================================================
 
-    commentHeader: {
-      height:
-        52,
+//     commentHeader: {
+//       height:
+//         52,
 
-      flexDirection:
-        'row',
+//       flexDirection:
+//         'row',
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      justifyContent:
-        'space-between',
+//       justifyContent:
+//         'space-between',
 
-      paddingHorizontal:
-        16,
+//       paddingHorizontal:
+//         16,
 
-      borderBottomWidth:
-        1,
+//       borderBottomWidth:
+//         1,
 
-      borderBottomColor:
-        '#292D31',
-    },
+//       borderBottomColor:
+//         '#292D31',
+//     },
 
 
-    headerSpacer: {
-      width:
-        40,
-    },
+//     headerSpacer: {
+//       width:
+//         40,
+//     },
 
 
-    commentHeaderTitle: {
-      flex: 1,
+//     commentHeaderTitle: {
+//       flex: 1,
 
-      textAlign:
-        'center',
+//       textAlign:
+//         'center',
 
-      fontSize:
-        18,
+//       fontSize:
+//         18,
 
-      fontWeight:
-        '700',
+//       fontWeight:
+//         '700',
 
-      color:
-        '#FFFFFF',
-    },
+//       color:
+//         '#FFFFFF',
+//     },
 
 
-    closeButton: {
-      width:
-        40,
+//     closeButton: {
+//       width:
+//         40,
 
-      height:
-        40,
+//       height:
+//         40,
 
-      borderRadius:
-        20,
+//       borderRadius:
+//         20,
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      justifyContent:
-        'center',
-    },
+//       justifyContent:
+//         'center',
+//     },
 
 
-    closeText: {
-      fontSize:
-        20,
+//     closeText: {
+//       fontSize:
+//         20,
 
-      color:
-        '#FFFFFF',
-    },
+//       color:
+//         '#FFFFFF',
+//     },
 
 
-    // =================================================
-    // COMMENTS LIST
-    // =================================================
+//     // =================================================
+//     // COMMENTS LIST
+//     // =================================================
 
-    commentsList: {
-      paddingHorizontal:
-        16,
+//     commentsList: {
+//       paddingHorizontal:
+//         16,
 
-      paddingTop:
-        12,
+//       paddingTop:
+//         12,
 
-      paddingBottom:
-        15,
-    },
+//       paddingBottom:
+//         15,
+//     },
 
 
-    emptyCommentsContent: {
-      flexGrow:
-        1,
+//     emptyCommentsContent: {
+//       flexGrow:
+//         1,
 
-      justifyContent:
-        'center',
+//       justifyContent:
+//         'center',
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      paddingHorizontal:
-        20,
-    },
+//       paddingHorizontal:
+//         20,
+//     },
 
 
-    emptyComments: {
-      alignItems:
-        'center',
-    },
+//     emptyComments: {
+//       alignItems:
+//         'center',
+//     },
 
 
-    emptyCommentsIcon: {
-      fontSize:
-        38,
+//     emptyCommentsIcon: {
+//       fontSize:
+//         38,
 
-      marginBottom:
-        12,
-    },
+//       marginBottom:
+//         12,
+//     },
 
 
-    emptyCommentsTitle: {
-      fontSize:
-        17,
+//     emptyCommentsTitle: {
+//       fontSize:
+//         17,
 
-      fontWeight:
-        '700',
+//       fontWeight:
+//         '700',
 
-      color:
-        '#FFFFFF',
-    },
+//       color:
+//         '#FFFFFF',
+//     },
 
 
-    emptyCommentsText: {
-      marginTop:
-        6,
+//     emptyCommentsText: {
+//       marginTop:
+//         6,
 
-      fontSize:
-        14,
+//       fontSize:
+//         14,
 
-      color:
-        '#9DA3A8',
-    },
+//       color:
+//         '#9DA3A8',
+//     },
 
 
-    // =================================================
-    // LOADING
-    // =================================================
+//     // =================================================
+//     // LOADING
+//     // =================================================
 
-    commentsLoading: {
-      flex: 1,
+//     commentsLoading: {
+//       flex: 1,
 
-      alignItems:
-        'center',
+//       alignItems:
+//         'center',
 
-      justifyContent:
-        'center',
-    },
+//       justifyContent:
+//         'center',
+//     },
 
 
-    loadingCommentsText: {
-      marginTop:
-        10,
+//     loadingCommentsText: {
+//       marginTop:
+//         10,
 
-      color:
-        '#AEB4B9',
+//       color:
+//         '#AEB4B9',
 
-      fontSize:
-        14,
-    },
+//       fontSize:
+//         14,
+//     },
 
-  });
+//   });
 
+const styles = StyleSheet.create({
 
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F7F9F8',
+  },
+
+  flex: {
+    flex: 1,
+  },
+
+  // ==========================================
+  // HEADER
+  // ==========================================
+
+  topBar: {
+    height: 58,
+    paddingHorizontal: 18,
+
+    backgroundColor: '#FFFFFF',
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E7ECEA',
+
+    justifyContent: 'center',
+  },
+
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  backIcon: {
+    fontSize: 34,
+    lineHeight: 30,
+
+    color: '#173A4A',
+
+    marginRight: 5,
+    fontWeight: '300',
+  },
+
+  backLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#173A4A',
+  },
+
+  // ==========================================
+  // BLOG
+  // ==========================================
+
+  content: {
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    paddingBottom: 40,
+  },
+
+  title: {
+    fontSize: 32,
+    lineHeight: 39,
+
+    fontWeight: '800',
+
+    color: '#111817',
+
+    marginBottom: 16,
+  },
+
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    marginBottom: 20,
+  },
+
+  authorAvatar: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 21,
+
+    backgroundColor: '#DDEEE7',
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    marginRight: 11,
+  },
+
+  authorAvatarText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#00503D',
+  },
+
+  metaInfo: {
+    justifyContent: 'center',
+  },
+
+  author: {
+    fontSize: 15,
+    fontWeight: '700',
+
+    color: '#00503D',
+
+    marginBottom: 3,
+  },
+
+  date: {
+    fontSize: 13,
+    color: '#7A898E',
+  },
+
+  image: {
+    width: '100%',
+    height: 230,
+
+    borderRadius: 18,
+
+    marginBottom: 20,
+
+    backgroundColor: '#E9EFEC',
+  },
+
+  articleCard: {
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 16,
+
+    paddingHorizontal: 17,
+    paddingVertical: 18,
+
+    marginBottom: 18,
+
+    borderWidth: 1,
+    borderColor: '#E8ECEA',
+  },
+
+  description: {
+    fontSize: 16,
+    lineHeight: 26,
+
+    color: '#263330',
+  },
+
+  // ==========================================
+  // ACTIONS
+  // ==========================================
+
+  actionsCard: {
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 16,
+
+    borderWidth: 1,
+    borderColor: '#E8ECEA',
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    paddingVertical: 12,
+
+    marginBottom: 20,
+  },
+
+  actionButton: {
+    flex: 1,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    minHeight: 48,
+  },
+
+  actionIconContainer: {
+    width: 40,
+    height: 40,
+
+    borderRadius: 20,
+
+    backgroundColor: '#F1F6F4',
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    marginRight: 9,
+  },
+
+  actionIconContainerActive: {
+    backgroundColor: '#E2F1EA',
+  },
+
+  actionIcon: {
+    fontSize: 21,
+    color: '#00503D',
+  },
+
+  actionText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#173A4A',
+  },
+
+  actionLabel: {
+    fontSize: 11,
+    color: '#7A898E',
+    marginTop: 1,
+  },
+
+  bottomSpacer: {
+    height: 30,
+  },
+
+  // ==========================================
+  // MODAL
+  // ==========================================
+keyboardContainer: {
+  flex: 1,
+},
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 25, 28, 0.52)',
+  },
+
+  // ==========================================
+  // COMMENT SHEET
+  // ==========================================
+
+  
+
+commentSheet: {
+  width: '100%',
+  height: '76%',
+
+  backgroundColor: '#FFFFFF',
+
+  borderTopLeftRadius: 28,
+  borderTopRightRadius: 28,
+
+  overflow: 'hidden',
+},
+  dragHandle: {
+    width: 42,
+    height: 5,
+
+    borderRadius: 3,
+
+    backgroundColor: '#C8D0CD',
+
+    alignSelf: 'center',
+
+    marginTop: 10,
+    marginBottom: 7,
+  },
+
+  // ==========================================
+  // COMMENT HEADER
+  // ==========================================
+
+  commentHeader: {
+    height: 60,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    paddingHorizontal: 16,
+
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9EDEC',
+  },
+
+  headerSide: {
+    width: 44,
+  },
+
+  commentHeaderTitle: {
+    flex: 1,
+
+    textAlign: 'center',
+
+    fontSize: 21,
+    fontWeight: '800',
+
+    color: '#173A4A',
+  },
+
+  closeButton: {
+    width: 44,
+    height: 44,
+
+    borderRadius: 22,
+
+    backgroundColor: '#F3F6F5',
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  closeText: {
+    fontSize: 29,
+    lineHeight: 30,
+
+    fontWeight: '300',
+
+    color: '#173A4A',
+  },
+
+  // ==========================================
+  // COMMENTS AREA
+  // ==========================================
+
+  commentsArea: {
+    flex: 1,
+
+    backgroundColor: '#FFFFFF',
+  },
+
+  commentsList: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+
+  emptyCommentsContent: {
+    flexGrow: 1,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    paddingHorizontal: 30,
+  },
+
+  emptyComments: {
+    alignItems: 'center',
+  },
+
+  emptyCommentsIcon: {
+    fontSize: 38,
+
+    marginBottom: 10,
+  },
+
+  emptyCommentsTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+
+    color: '#173A4A',
+
+    marginBottom: 5,
+  },
+
+  emptyCommentsText: {
+    fontSize: 13,
+    lineHeight: 20,
+
+    textAlign: 'center',
+
+    color: '#7A898E',
+  },
+
+  // ==========================================
+  // LOADING
+  // ==========================================
+
+  commentsLoading: {
+    flex: 1,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingCommentsText: {
+    marginTop: 10,
+
+    fontSize: 14,
+
+    color: '#7A898E',
+  },
+
+  // ==========================================
+  // COMMENT INPUT
+  // ==========================================
+
+commentInputWrapper: {
+  backgroundColor: '#171A1D',
+
+  borderTopWidth: 1,
+  borderTopColor: '#E4E9E7',
+
+  paddingTop: 8,
+},
+
+});
 export default BlogDetailScreen;

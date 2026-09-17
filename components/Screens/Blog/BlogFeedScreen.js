@@ -44,6 +44,12 @@ import { getCommentAuthorName } from './CommentItem';
 
 import BlogCard from '../../blog/BlogCard';
 
+import {
+  createBottomTabNavigator,
+  useBottomTabBarHeight,
+} from '@react-navigation/bottom-tabs';
+const Tab = createBottomTabNavigator();
+import RequestScreen from './Screens/RequestsScreen';
 /* =====================================================
    CONFIG
 ===================================================== */
@@ -1283,266 +1289,7 @@ const BlogFeedScreen = ({
       {/* =============================================
           COMMENT MODAL
       ============================================= */}
-
-      {/* <Modal
-        visible={
-          commentModalVisible
-        }
-        transparent
-        animationType="slide"
-        onRequestClose={
-          closeCommentModal
-        }
-        statusBarTranslucent
-      >
-        
-
-        <Pressable
-          style={
-            styles.modalContainer
-          }
-          onPress={
-            closeCommentModal
-          }
-        >
-          
-
-          <Pressable
-            style={
-              styles.commentModal
-            }
-            onPress={event =>
-              event.stopPropagation()
-            }
-          >
-            <KeyboardAvoidingView
-              behavior={
-                Platform.OS ===
-                  'ios'
-                  ? 'padding'
-                  : undefined
-              }
-              style={
-                styles.commentSheetInner
-              }
-            >
-              
-
-              <View
-                style={
-                  styles.commentHeader
-                }
-              >
-                <Text
-                  style={
-                    styles.commentTitle
-                  }
-                >
-                  Comments
-                </Text>
-
-                <TouchableOpacity
-                  onPress={
-                    closeCommentModal
-                  }
-                >
-                  <Text
-                    style={
-                      styles.closeText
-                    }
-                  >
-                    ✕
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              
-
-              {commentsLoading ? (
-                <View
-                  style={
-                    styles.commentsLoadingContainer
-                  }
-                >
-                  <ActivityIndicator
-                    size="small"
-                    color="#00503D"
-                  />
-
-                  <Text
-                    style={
-                      styles.commentsLoadingText
-                    }
-                  >
-                    Loading comments...
-                  </Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={
-                    comments
-                  }
-                  keyExtractor={(
-                    item,
-                    index,
-                  ) =>
-                    item?._id ||
-                    `comment-${index}`
-                  }
-                  style={
-                    styles.commentsListContainer
-                  }
-                  contentContainerStyle={
-                    comments.length ===
-                      0
-                      ? styles.emptyCommentsList
-                      : styles.commentsListContent
-                  }
-                  showsVerticalScrollIndicator={
-                    false
-                  }
-                  keyboardShouldPersistTaps="handled"
-                  ListEmptyComponent={
-                    <View
-                      style={
-                        styles.emptyCommentsBox
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.emptyCommentsIcon
-                        }
-                      >
-                        💬
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.emptyCommentsTitle
-                        }
-                      >
-                        No comments yet
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.emptyCommentsText
-                        }
-                      >
-                        Be the first to
-                        comment on this
-                        blog.
-                      </Text>
-                    </View>
-                  }
-                  renderItem={({
-                    item,
-                  }) => (
-                    <View
-                      style={
-                        styles.commentBubble
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.commentAuthor
-                        }
-                      >
-                        {getCommentAuthorName(
-                          item,
-                        )}
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.commentContent
-                        }
-                      >
-                        {item?.content ||
-                          item?.comment ||
-                          'No comment text'}
-                      </Text>
-                    </View>
-                  )}
-                />
-              )}
-
-              
-
-              <View
-                style={
-                  styles.commentInputWrap
-                }
-              >
-                <TextInput
-                  style={
-                    styles.commentInput
-                  }
-                  placeholder="Write your comment..."
-                  placeholderTextColor="#999"
-                  value={
-                    commentText
-                  }
-                  onChangeText={
-                    setCommentText
-                  }
-                  multiline
-                  maxLength={
-                    2000
-                  }
-                  textAlignVertical="top"
-                  returnKeyType="default"
-                  blurOnSubmit={
-                    false
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.characterCount
-                  }
-                >
-                  {
-                    commentText.length
-                  }
-                  /2000
-                </Text>
-
-                <TouchableOpacity
-                  style={[
-                    styles.commentSubmitButton,
-
-                    (!commentText.trim() ||
-                      commentSubmitting) &&
-                    styles.commentSubmitButtonDisabled,
-                  ]}
-                  onPress={
-                    handleSubmitComment
-                  }
-                  disabled={
-                    !commentText.trim() ||
-                    commentSubmitting
-                  }
-                >
-                  {commentSubmitting ? (
-                    <ActivityIndicator
-                      color="#FFFFFF"
-                    />
-                  ) : (
-                    <Text
-                      style={
-                        styles.commentSubmitText
-                      }
-                    >
-                      Post Comment
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
-          </Pressable>
-        </Pressable>
-      </Modal> */}
+ 
 
       <Modal
         visible={commentModalVisible}
@@ -1757,6 +1504,92 @@ const BlogFeedScreen = ({
           }
         />
       )}
+
+
+
+
+
+
+
+
+
+
+        <View style={styles.tabsWrapper}>
+            <Tab.Navigator
+              screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarIcon: ({ focused }) => {
+                  let iconName;
+
+                  switch (route.name) {
+                    case 'Home':
+                      iconName = 'home';
+                      break;
+                    case 'Request':
+                      iconName = 'envelope';
+                      break;
+                    case 'Blog':
+                      iconName = 'newspaper-o';
+                      break;
+                    case 'UserProfile':
+                      iconName = 'user';
+                      break;
+                  }
+
+                  const color = focused ? '#6a9689' : 'darkgray';
+                  return <Icon name={iconName} color={color} size={30} />;
+                },
+                tabBarActiveTintColor: '#6a9689',
+                tabBarInactiveTintColor: 'darkgray',
+                tabBarStyle: [
+                  {
+                    height: 55 + insets.bottom,
+                    paddingBottom: 10 + insets.bottom,
+                    paddingTop: 5,
+                  },
+                ],
+              })}
+            >
+              <Tab.Screen name="Home">
+                {props => (
+                  <HomeScreenWrapper
+                    {...props}
+                    setTabNavigation={setTabNavigation}
+                  />
+                )}
+              </Tab.Screen>
+              <Tab.Screen
+                name="Request"
+                component={RequestScreen}
+                initialParams={{
+                  selectedRequestId: null,
+                  defaultTab: 'My Requests',
+                }}
+              />
+              {/* <Tab.Screen
+                name="Trips"
+                component={TripScreen}
+              /> */}
+              {/* <Tab.Screen name="Blog">
+                {props => (
+                  <BlogFeedScreen
+                    {...props}
+                    embedded
+                  />
+                )}
+              </Tab.Screen> */}
+              <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
+              {/* Salary screen kept but hidden from tab bar */}
+              <Tab.Screen
+                name="Salary"
+                component={MyPayslip}
+                options={{
+                  headerShown: false,
+                  tabBarItemStyle: { display: 'none' }, // ✅ IMPORTANT
+                }}
+              />
+            </Tab.Navigator>
+          </View>
     </View>
   );
 };

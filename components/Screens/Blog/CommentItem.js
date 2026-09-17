@@ -210,14 +210,15 @@ const styles =
   StyleSheet.create({
 
     container: {
-      flexDirection:
-        'row',
+      flexDirection: 'row',
 
-      alignItems:
-        'flex-start',
+      alignItems: 'flex-start',
 
-      paddingVertical:
-        11,
+      paddingVertical: 13,
+
+      borderBottomWidth: 1,
+
+      borderBottomColor: '#F0F3F2',
     },
 
 
@@ -226,28 +227,20 @@ const styles =
     // =================================================
 
     avatar: {
-      width:
-        40,
+      width: 42,
 
-      height:
-        40,
+      height: 42,
 
-      borderRadius:
-        20,
+      borderRadius: 21,
 
-      backgroundColor:
-        '#3C454B',
+      backgroundColor: '#3F4B51',
 
-      alignItems:
-        'center',
+      alignItems: 'center',
 
-      justifyContent:
-        'center',
+      justifyContent: 'center',
 
-      marginRight:
-        10,
+      marginRight: 11,
     },
-
 
     avatarText: {
       color:
@@ -286,41 +279,35 @@ const styles =
 
 
     userName: {
-      maxWidth:
-        '75%',
+      maxWidth: '75%',
 
-      color:
-        '#F5F5F5',
+      color: '#173A4A',
 
-      fontSize:
-        14,
+      fontSize: 15,
 
-      fontWeight:
-        '700',
+      fontWeight: '800',
     },
 
 
     time: {
-      marginLeft:
-        7,
+      marginLeft: 8,
 
-      color:
-        '#858B91',
+      color: '#7A898E',
 
-      fontSize:
-        12,
+      fontSize: 12,
+
+      fontWeight: '500',
     },
 
 
     commentText: {
-      color:
-        '#F1F1F1',
+      color: '#263330',
 
-      fontSize:
-        15,
+      fontSize: 15,
 
-      lineHeight:
-        21,
+      lineHeight: 22,
+
+      fontWeight: '500',
     },
 
 
@@ -341,31 +328,22 @@ const styles =
 
 
     replyText: {
-      color:
-        '#9CA2A7',
+      color: '#52656A',
 
-      fontSize:
-        12,
+      fontSize: 13,
 
-      fontWeight:
-        '600',
+      fontWeight: '700',
     },
-
 
     deleteText: {
-      color:
-        '#E57373',
+      color: '#D85C5C',
 
-      fontSize:
-        12,
+      fontSize: 13,
 
-      fontWeight:
-        '600',
+      fontWeight: '700',
 
-      marginLeft:
-        16,
+      marginLeft: 18,
     },
-
 
     // =================================================
     // HEART
@@ -385,13 +363,12 @@ const styles =
         'center',
     },
 
-
     heart: {
-      fontSize:
-        25,
+      fontSize: 27,
 
-      color:
-        '#AEB4B9',
+      color: '#718087',
+
+      fontWeight: '400',
     },
 
   });

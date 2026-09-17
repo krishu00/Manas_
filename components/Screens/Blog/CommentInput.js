@@ -10,7 +10,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Keyboard,
+
 } from 'react-native';
 
 
@@ -103,7 +103,7 @@ const CommentInput = ({
             setText
           }
           placeholder="Add a comment..."
-          placeholderTextColor="#858B91"
+          placeholderTextColor="#9AA3A8"
           multiline
           maxLength={2000}
           editable={!submitting}
@@ -243,50 +243,39 @@ const styles =
     inputContainer: {
       flex: 1,
 
-      minHeight:
-        44,
+      minHeight: 46,
 
-      maxHeight:
-        100,
+      maxHeight: 100,
 
-      borderWidth:
-        1,
+      borderWidth: 1,
 
-      borderColor:
-        '#3A4045',
+      borderColor: '#465057',
 
-      borderRadius:
-        22,
+      borderRadius: 23,
 
-      backgroundColor:
-        '#1B1F22',
+      backgroundColor: '#252A2E',
 
-      justifyContent:
-        'center',
+      justifyContent: 'center',
 
-      paddingHorizontal:
-        15,
+      paddingHorizontal: 16,
     },
 
-
     input: {
-      minHeight:
-        42,
+      minHeight: 42,
 
-      maxHeight:
-        90,
+      maxHeight: 90,
 
-      color:
-        '#FFFFFF',
+      color: '#FFFFFF',
 
-      fontSize:
-        15,
+      fontSize: 16,
 
-      paddingVertical:
-        9,
+      lineHeight: 21,
 
-      paddingHorizontal:
-        0,
+      fontWeight: '500',
+
+      paddingVertical: 9,
+
+      paddingHorizontal: 0,
     },
 
 
@@ -295,46 +284,35 @@ const styles =
     // =================================================
 
     sendButton: {
-      width:
-        44,
+      width: 46,
 
-      height:
-        44,
+      height: 46,
 
-      borderRadius:
-        22,
+      borderRadius: 23,
 
-      alignItems:
-        'center',
+      alignItems: 'center',
 
-      justifyContent:
-        'center',
+      justifyContent: 'center',
 
-      marginLeft:
-        7,
+      marginLeft: 8,
 
-      backgroundColor:
-        '#81BAA5',
+      backgroundColor: '#4F8F78',
     },
-
 
     sendButtonDisabled: {
       opacity:
-        0.4,
+        0.35,
     },
-
 
     sendText: {
-      color:
-        '#FFFFFF',
+      color: '#FFFFFF',
 
-      fontSize:
-        24,
+      fontSize: 26,
 
-      fontWeight:
-        '800',
+      lineHeight: 28,
+
+      fontWeight: '800',
     },
-
   });
 
 
