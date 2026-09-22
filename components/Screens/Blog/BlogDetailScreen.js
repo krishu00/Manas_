@@ -1,8 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   View,
@@ -21,16 +17,11 @@ import BlogImage from '../../common/BlogImage';
 import CommentItem from './CommentItem';
 import CommentInput from './CommentInput';
 
-import {
-  LoadingState,
-  ErrorState,
-} from '../../common/StateViews';
+import { LoadingState, ErrorState } from '../../common/StateViews';
 
 import Popup from '../../Popup/Popup';
 
-import {
-  getAuthToken,
-} from '../../../src/utils/auth';
+import { getAuthToken } from '../../../src/utils/auth';
 
 import {
   getBlogById,
@@ -41,19 +32,13 @@ import {
   unlikeBlog,
 } from '../../../src/api/blogApi';
 
-import {
-  COLORS,
-  SPACING,
-  FONT,
-} from '../../../src/utils/theme';
-
+import { COLORS, SPACING, FONT } from '../../../src/utils/theme';
 
 // =====================================================
 // TIME AGO
 // =====================================================
 
 const timeAgo = isoDate => {
-
   if (!isoDate) {
     return '';
   }
@@ -64,11 +49,9 @@ const timeAgo = isoDate => {
     return '';
   }
 
-  const diffMs =
-    Date.now() - date.getTime();
+  const diffMs = Date.now() - date.getTime();
 
-  const mins =
-    Math.floor(diffMs / 60000);
+  const mins = Math.floor(diffMs / 60000);
 
   if (mins < 1) {
     return 'just now';
@@ -78,40 +61,34 @@ const timeAgo = isoDate => {
     return `${mins}m`;
   }
 
-  const hours =
-    Math.floor(mins / 60);
+  const hours = Math.floor(mins / 60);
 
   if (hours < 24) {
     return `${hours}h`;
   }
 
-  const days =
-    Math.floor(hours / 24);
+  const days = Math.floor(hours / 24);
 
   if (days < 30) {
     return `${days}d`;
   }
 
-  const months =
-    Math.floor(days / 30);
+  const months = Math.floor(days / 30);
 
   if (months < 12) {
     return `${months}mo`;
   }
 
-  const years =
-    Math.floor(months / 12);
+  const years = Math.floor(months / 12);
 
   return `${years}y`;
 };
-
 
 // =====================================================
 // FORMAT DATE
 // =====================================================
 
 const formatDate = isoDate => {
-
   if (!isoDate) {
     return '';
   }
@@ -122,73 +99,52 @@ const formatDate = isoDate => {
     return '';
   }
 
-  return date.toLocaleDateString(
-    'en-IN',
-    {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    },
-  );
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 };
-
 
 // =====================================================
 // BLOG DETAIL SCREEN
 // =====================================================
 
-const BlogDetailScreen = ({
-  route,
-  navigation,
-}) => {
-
-  const blogId =
-    route?.params?.blogId;
+const BlogDetailScreen = ({ route, navigation }) => {
+  const blogId = route?.params?.blogId;
 
   console.log('📖 BlogDetailScreen');
   console.log('📖 Route params:', route?.params);
   console.log('📖 Blog ID:', blogId);
-  const openCommentsInitially =
-    route?.params?.openComments === true;
-
+  const openCommentsInitially = route?.params?.openComments === true;
 
   // ===================================================
   // BLOG STATE
   // ===================================================
 
-  const [blog, setBlog] =
-    useState(null);
+  const [blog, setBlog] = useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState(null);
-
+  const [error, setError] = useState(null);
 
   // ===================================================
   // COMMENTS STATE
   // ===================================================
 
-  const [comments, setComments] =
-    useState([]);
+  const [comments, setComments] = useState([]);
 
-  const [commentsVisible, setCommentsVisible] =
-    useState(openCommentsInitially);
+  const [commentsVisible, setCommentsVisible] = useState(openCommentsInitially);
 
-  const [commentsLoading, setCommentsLoading] =
-    useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
-  const [commentSubmitting, setCommentSubmitting] =
-    useState(false);
-
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
 
   // ===================================================
   // LIKE STATE
   // ===================================================
 
-  const [likeBusy, setLikeBusy] =
-    useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
 
   /*
    * This only controls the visual state of the heart.
@@ -197,9 +153,7 @@ const BlogDetailScreen = ({
    *
    * likesCount always comes from the backend.
    */
-  const [isLiked, setIsLiked] =
-    useState(false);
-
+  const [isLiked, setIsLiked] = useState(false);
 
   // ===================================================
   // POPUP
@@ -211,982 +165,537 @@ const BlogDetailScreen = ({
     message: '',
   });
 
-
   // ===================================================
   // SHOW POPUP
   // ===================================================
 
-  const showPopup =
-    useCallback(
-      (title, message) => {
-
-        setPopup({
-          visible: true,
-          title:
-            title ||
-            'Message',
-          message:
-            message ||
-            '',
-        });
-
-      },
-      [],
-    );
-
+  const showPopup = useCallback((title, message) => {
+    setPopup({
+      visible: true,
+      title: title || 'Message',
+      message: message || '',
+    });
+  }, []);
 
   // ===================================================
   // CLOSE POPUP
   // ===================================================
 
-  const closePopup =
-    useCallback(
-      () => {
-
-        setPopup({
-          visible: false,
-          title: '',
-          message: '',
-        });
-
-      },
-      [],
-    );
-
+  const closePopup = useCallback(() => {
+    setPopup({
+      visible: false,
+      title: '',
+      message: '',
+    });
+  }, []);
 
   // ===================================================
   // AUTH
   // ===================================================
 
-  const checkAuth =
-    useCallback(
-      async () => {
+  const checkAuth = useCallback(async () => {
+    try {
+      const token = await getAuthToken();
 
-        try {
+      console.log('🔐 Auth token exists:', !!token);
 
-          const token =
-            await getAuthToken();
+      return token;
+    } catch (err) {
+      console.error('❌ Auth check error:', err);
 
-          console.log(
-            '🔐 Auth token exists:',
-            !!token,
-          );
-
-          return token;
-
-        } catch (err) {
-
-          console.error(
-            '❌ Auth check error:',
-            err,
-          );
-
-          return null;
-
-        }
-
-      },
-      [],
-    );
-
+      return null;
+    }
+  }, []);
 
   // ===================================================
   // LOAD BLOG
   // ===================================================
 
-  const loadBlog =
-    useCallback(
-      async () => {
+  const loadBlog = useCallback(async () => {
+    if (!blogId) {
+      setError('Blog information is missing.');
 
-        if (!blogId) {
+      return null;
+    }
 
-          setError(
-            'Blog information is missing.',
-          );
+    try {
+      console.log('================================');
 
-          return null;
+      console.log('📖 GET BLOG');
 
-        }
+      console.log('Blog ID:', blogId);
 
-        try {
+      const response = await getBlogById(blogId);
 
-          console.log(
-            '================================',
-          );
+      console.log('📖 Blog response:', response);
 
-          console.log(
-            '📖 GET BLOG',
-          );
+      const blogData = response?.data || response?.blog || response;
 
-          console.log(
-            'Blog ID:',
-            blogId,
-          );
+      if (!blogData) {
+        throw new Error('Blog data not found.');
+      }
 
+      console.log('📖 Final blog data:', JSON.stringify(blogData, null, 2));
 
-          const response =
-            await getBlogById(
-              blogId,
-            );
+      setBlog(blogData);
 
+      /*
+       * Get the user's current like
+       * state from the server.
+       *
+       * We DO NOT calculate the count here.
+       */
 
-          console.log(
-            '📖 Blog response:',
-            response,
-          );
+      setIsLiked(!!blogData?.isLikedByMe);
 
+      return blogData;
+    } catch (err) {
+      console.error(
+        '❌ Blog loading error:',
+        err?.response?.data || err?.message || err,
+      );
 
-          const blogData =
-            response?.data ||
-            response?.blog ||
-            response;
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Could not load this blog post.',
+      );
 
-
-          if (!blogData) {
-
-            throw new Error(
-              'Blog data not found.',
-            );
-
-          }
-
-
-          console.log(
-            '📖 Final blog data:',
-            JSON.stringify(
-              blogData,
-              null,
-              2,
-            ),
-          );
-
-
-          setBlog(
-            blogData,
-          );
-
-
-          /*
-           * Get the user's current like
-           * state from the server.
-           *
-           * We DO NOT calculate the count here.
-           */
-
-          setIsLiked(
-            !!blogData?.isLikedByMe,
-          );
-
-
-          return blogData;
-
-        } catch (err) {
-
-          console.error(
-            '❌ Blog loading error:',
-            err?.response?.data ||
-            err?.message ||
-            err,
-          );
-
-
-          setError(
-            err?.response?.data?.message ||
-            err?.message ||
-            'Could not load this blog post.',
-          );
-
-          return null;
-
-        }
-
-      },
-      [blogId],
-    );
-
+      return null;
+    }
+  }, [blogId]);
 
   // ===================================================
   // LOAD COMMENTS
   // ===================================================
 
-  const loadComments =
-    useCallback(
-      async () => {
+  const loadComments = useCallback(async () => {
+    if (!blogId) {
+      return;
+    }
 
-        if (!blogId) {
-          return;
-        }
+    try {
+      setCommentsLoading(true);
 
-        try {
+      console.log('💬 Loading comments:', blogId);
 
-          setCommentsLoading(
-            true,
-          );
+      const response = await getBlogComments(blogId);
 
+      console.log('💬 RAW COMMENTS:', JSON.stringify(response?.data, null, 2));
 
-          console.log(
-            '💬 Loading comments:',
-            blogId,
-          );
+      const commentList = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+        ? response
+        : [];
 
+      console.log(
+        '💬 COMMENTS BEING STORED:',
+        JSON.stringify(commentList, null, 2),
+      );
 
-          const response =
-            await getBlogComments(
-              blogId,
-            );
+      setComments(commentList);
+    } catch (err) {
+      console.error(
+        '❌ Comments error:',
+        err?.response?.data || err?.message || err,
+      );
 
+      setComments([]);
 
-          console.log(
-            '💬 RAW COMMENTS:',
-            JSON.stringify(
-              response?.data,
-              null,
-              2,
-            ),
-          );
-
-
-          const commentList =
-            Array.isArray(
-              response?.data,
-            )
-              ? response.data
-              : Array.isArray(
-                response,
-              )
-                ? response
-                : [];
-
-
-          console.log(
-            '💬 COMMENTS BEING STORED:',
-            JSON.stringify(
-              commentList,
-              null,
-              2,
-            ),
-          );
-
-
-          setComments(
-            commentList,
-          );
-
-
-        } catch (err) {
-
-          console.error(
-            '❌ Comments error:',
-            err?.response?.data ||
-            err?.message ||
-            err,
-          );
-
-
-          setComments([]);
-
-
-          showPopup(
-            'Unable to Load Comments',
-            err?.response?.data?.message ||
-            'Could not load comments.',
-          );
-
-
-        } finally {
-
-          setCommentsLoading(
-            false,
-          );
-
-        }
-
-      },
-      [
-        blogId,
-        showPopup,
-      ],
-    );
-
+      showPopup(
+        'Unable to Load Comments',
+        err?.response?.data?.message || 'Could not load comments.',
+      );
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [blogId, showPopup]);
 
   // ===================================================
   // INITIAL LOAD
   // ===================================================
 
   useEffect(() => {
+    const initialize = async () => {
+      setLoading(true);
 
-    const initialize =
-      async () => {
+      await Promise.all([loadBlog(), loadComments()]);
 
-        setLoading(
-          true,
-        );
-
-        await Promise.all([
-          loadBlog(),
-          loadComments(),
-        ]);
-
-        setLoading(
-          false,
-        );
-
-      };
-
+      setLoading(false);
+    };
 
     initialize();
-
-  }, [
-    loadBlog,
-    loadComments,
-  ]);
-
+  }, [loadBlog, loadComments]);
 
   // ===================================================
   // OPEN COMMENTS
   // ===================================================
 
-  const openComments =
-    async () => {
+  const openComments = async () => {
+    console.log('💬 Comment button pressed');
 
-      console.log(
-        '💬 Comment button pressed',
-      );
+    const token = await checkAuth();
 
+    if (!token) {
+      navigation.navigate('Login');
 
-      const token =
-        await checkAuth();
+      return;
+    }
 
+    /*
+     * IMPORTANT:
+     *
+     * We DO NOT navigate anywhere.
+     *
+     * We simply open the modal
+     * on this screen.
+     */
 
-      if (!token) {
+    setCommentsVisible(true);
 
-        navigation.navigate(
-          'Login',
-        );
-
-        return;
-
-      }
-
-
-      /*
-       * IMPORTANT:
-       *
-       * We DO NOT navigate anywhere.
-       *
-       * We simply open the modal
-       * on this screen.
-       */
-
-      setCommentsVisible(
-        true,
-      );
-
-
-      await loadComments();
-
-    };
-
+    await loadComments();
+  };
 
   // ===================================================
   // CLOSE COMMENTS
   // ===================================================
 
-  const closeComments =
-    () => {
-
-      setCommentsVisible(
-        false,
-      );
-
-    };
-
+  const closeComments = () => {
+    setCommentsVisible(false);
+  };
 
   // ===================================================
   // LIKE / UNLIKE
   // ===================================================
 
-  const handleToggleLike =
-    async () => {
+  const handleToggleLike = async () => {
+    if (likeBusy || !blogId) {
+      return;
+    }
 
-      if (
-        likeBusy ||
-        !blogId
-      ) {
+    try {
+      // ---------------------------------------------
+      // AUTH CHECK
+      // ---------------------------------------------
+
+      const token = await checkAuth();
+
+      if (!token) {
+        navigation.navigate('Login');
+
         return;
       }
 
+      setLikeBusy(true);
 
-      try {
+      /*
+       * IMPORTANT
+       *
+       * If currently false:
+       *
+       *     POST → LIKE
+       *
+       * If currently true:
+       *
+       *     DELETE → UNLIKE
+       */
 
-        // ---------------------------------------------
-        // AUTH CHECK
-        // ---------------------------------------------
+      const currentlyLiked = isLiked;
 
-        const token =
-          await checkAuth();
+      console.log('❤️ Current like state:', currentlyLiked);
 
+      let response;
 
-        if (!token) {
+      // =============================================
+      // LIKE
+      // =============================================
 
-          navigation.navigate(
-            'Login',
-          );
+      if (!currentlyLiked) {
+        console.log('❤️ Sending LIKE request');
 
-          return;
-
-        }
-
-
-        setLikeBusy(
-          true,
-        );
-
-
-        /*
-         * IMPORTANT
-         *
-         * If currently false:
-         *
-         *     POST → LIKE
-         *
-         * If currently true:
-         *
-         *     DELETE → UNLIKE
-         */
-
-        const currentlyLiked =
-          isLiked;
-
-
-        console.log(
-          '❤️ Current like state:',
-          currentlyLiked,
-        );
-
-
-        let response;
-
-
-        // =============================================
-        // LIKE
-        // =============================================
-
-        if (!currentlyLiked) {
-
-          console.log(
-            '❤️ Sending LIKE request',
-          );
-
-
-          response =
-            await likeBlog(
-              blogId,
-            );
-
-
-        }
-
-        // =============================================
-        // UNLIKE
-        // =============================================
-
-        else {
-
-          console.log(
-            '💔 Sending UNLIKE request',
-          );
-
-
-          response =
-            await unlikeBlog(
-              blogId,
-            );
-
-        }
-
-
-        console.log(
-          '❤️ Like API response:',
-          JSON.stringify(
-            response,
-            null,
-            2,
-          ),
-        );
-
-
-        /*
-         * If backend explicitly says failure,
-         * don't change anything.
-         */
-
-        if (
-          response?.success === false
-        ) {
-
-          showPopup(
-            currentlyLiked
-              ? 'Unable to Unlike'
-              : 'Unable to Like',
-
-            response?.message ||
-            (
-              currentlyLiked
-                ? 'Unable to unlike this blog.'
-                : 'Unable to like this blog.'
-            ),
-          );
-
-          return;
-
-        }
-
-
-        // =============================================
-        // UPDATE HEART
-        // =============================================
-
-        setIsLiked(
-          !currentlyLiked,
-        );
-
-
-        /*
-         * VERY IMPORTANT:
-         *
-         * DO NOT manually do:
-         *
-         * likesCount + 1
-         *
-         * or
-         *
-         * likesCount - 1
-         *
-         *
-         * Instead reload the blog.
-         *
-         * The backend becomes the single source
-         * of truth for likesCount.
-         */
-
-        const updatedBlog =
-          await loadBlog();
-
-
-        if (updatedBlog) {
-
-          console.log(
-            '❤️ Updated likesCount:',
-            updatedBlog?.likesCount,
-          );
-
-        }
-
-
-      } catch (err) {
-
-        console.error(
-          '❌ Like/Unlike error:',
-          err?.response?.data ||
-          err?.message ||
-          err,
-        );
-
-
-        /*
-         * Reload server state if anything failed.
-         */
-
-        await loadBlog();
-
-
-        showPopup(
-          isLiked
-            ? 'Unable to Unlike'
-            : 'Unable to Like',
-
-          err?.response?.data?.message ||
-          err?.message ||
-          'Unable to update like.',
-        );
-
-
-      } finally {
-
-        setLikeBusy(
-          false,
-        );
-
+        response = await likeBlog(blogId);
       }
 
-    };
+      // =============================================
+      // UNLIKE
+      // =============================================
+      else {
+        console.log('💔 Sending UNLIKE request');
 
+        response = await unlikeBlog(blogId);
+      }
+
+      console.log('❤️ Like API response:', JSON.stringify(response, null, 2));
+
+      /*
+       * If backend explicitly says failure,
+       * don't change anything.
+       */
+
+      if (response?.success === false) {
+        showPopup(
+          currentlyLiked ? 'Unable to Unlike' : 'Unable to Like',
+
+          response?.message ||
+            (currentlyLiked
+              ? 'Unable to unlike this blog.'
+              : 'Unable to like this blog.'),
+        );
+
+        return;
+      }
+
+      // =============================================
+      // UPDATE HEART
+      // =============================================
+
+      setIsLiked(!currentlyLiked);
+
+      /*
+       * VERY IMPORTANT:
+       *
+       * DO NOT manually do:
+       *
+       * likesCount + 1
+       *
+       * or
+       *
+       * likesCount - 1
+       *
+       *
+       * Instead reload the blog.
+       *
+       * The backend becomes the single source
+       * of truth for likesCount.
+       */
+
+      const updatedBlog = await loadBlog();
+
+      if (updatedBlog) {
+        console.log('❤️ Updated likesCount:', updatedBlog?.likesCount);
+      }
+    } catch (err) {
+      console.error(
+        '❌ Like/Unlike error:',
+        err?.response?.data || err?.message || err,
+      );
+
+      /*
+       * Reload server state if anything failed.
+       */
+
+      await loadBlog();
+
+      showPopup(
+        isLiked ? 'Unable to Unlike' : 'Unable to Like',
+
+        err?.response?.data?.message ||
+          err?.message ||
+          'Unable to update like.',
+      );
+    } finally {
+      setLikeBusy(false);
+    }
+  };
 
   // ===================================================
   // ADD COMMENT
   // ===================================================
 
-  const handleAddComment =
-    async text => {
+  const handleAddComment = async text => {
+    if (commentSubmitting) {
+      return;
+    }
 
-      if (
-        commentSubmitting
-      ) {
+    const cleanText = text?.trim();
+
+    if (!cleanText) {
+      showPopup('Comment Required', 'Please enter a comment.');
+
+      return;
+    }
+
+    try {
+      const token = await checkAuth();
+
+      if (!token) {
+        navigation.navigate('Login');
+
         return;
       }
 
+      setCommentSubmitting(true);
 
-      const cleanText =
-        text?.trim();
+      console.log('💬 Adding comment:', cleanText);
 
+      const response = await addBlogComment(blogId, cleanText);
 
-      if (!cleanText) {
+      console.log('💬 Add comment response:', response);
 
-        showPopup(
-          'Comment Required',
-          'Please enter a comment.',
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        const token =
-          await checkAuth();
-
-
-        if (!token) {
-
-          navigation.navigate(
-            'Login',
-          );
-
-          return;
-
-        }
-
-
-        setCommentSubmitting(
-          true,
-        );
-
-
-        console.log(
-          '💬 Adding comment:',
-          cleanText,
-        );
-
-
-        const response =
-          await addBlogComment(
-            blogId,
-            cleanText,
-          );
-
-
-        console.log(
-          '💬 Add comment response:',
-          response,
-        );
-
-
-        if (
-          response?.success === false
-        ) {
-
-          showPopup(
-            'Unable to Comment',
-            response?.message ||
-            'Unable to add comment.',
-          );
-
-          return;
-
-        }
-
-
-        /*
-         * Add returned comment immediately.
-         */
-
-        if (
-          response?.data
-        ) {
-
-          setComments(
-            previous => [
-              response.data,
-              ...previous,
-            ],
-          );
-
-        } else {
-
-          await loadComments();
-
-        }
-
-
-        /*
-         * Reload blog so the comment count
-         * also comes from backend.
-         */
-
-        await loadBlog();
-
-
-        console.log(
-          '✅ Comment added successfully',
-        );
-
-
-      } catch (err) {
-
-        console.error(
-          '❌ Add comment error:',
-          err?.response?.data ||
-          err?.message ||
-          err,
-        );
-
-
+      if (response?.success === false) {
         showPopup(
           'Unable to Comment',
-          err?.response?.data?.message ||
-          err?.message ||
-          'Unable to add comment.',
+          response?.message || 'Unable to add comment.',
         );
 
-
-      } finally {
-
-        setCommentSubmitting(
-          false,
-        );
-
+        return;
       }
 
-    };
+      /*
+       * Add returned comment immediately.
+       */
 
+      if (response?.data) {
+        setComments(previous => [response.data, ...previous]);
+      } else {
+        await loadComments();
+      }
+
+      /*
+       * Reload blog so the comment count
+       * also comes from backend.
+       */
+
+      await loadBlog();
+
+      console.log('✅ Comment added successfully');
+    } catch (err) {
+      console.error(
+        '❌ Add comment error:',
+        err?.response?.data || err?.message || err,
+      );
+
+      showPopup(
+        'Unable to Comment',
+        err?.response?.data?.message ||
+          err?.message ||
+          'Unable to add comment.',
+      );
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
 
   // ===================================================
   // DELETE COMMENT
   // ===================================================
 
-  const handleDeleteComment =
-    async commentId => {
+  const handleDeleteComment = async commentId => {
+    if (!commentId) {
+      return;
+    }
 
-      if (!commentId) {
+    try {
+      const token = await checkAuth();
+
+      if (!token) {
+        navigation.navigate('Login');
+
         return;
       }
 
+      const previousComments = [...comments];
 
-      try {
+      /*
+       * Optimistic remove.
+       */
 
-        const token =
-          await checkAuth();
+      setComments(previous =>
+        previous.filter(comment => comment?._id !== commentId),
+      );
 
+      const response = await deleteBlogComment(blogId, commentId);
 
-        if (!token) {
+      console.log('🗑️ Delete comment response:', response);
 
-          navigation.navigate(
-            'Login',
-          );
-
-          return;
-
-        }
-
-
-        const previousComments =
-          [...comments];
-
-
-        /*
-         * Optimistic remove.
-         */
-
-        setComments(
-          previous =>
-            previous.filter(
-              comment =>
-                comment?._id !==
-                commentId,
-            ),
-        );
-
-
-        const response =
-          await deleteBlogComment(
-            blogId,
-            commentId,
-          );
-
-
-        console.log(
-          '🗑️ Delete comment response:',
-          response,
-        );
-
-
-        if (
-          response?.success === false
-        ) {
-
-          throw new Error(
-            response?.message ||
-            'Unable to delete comment.',
-          );
-
-        }
-
-
-        /*
-         * Reload blog.
-         *
-         * Backend provides the correct
-         * commentsCount.
-         */
-
-        await loadBlog();
-
-
-        console.log(
-          '✅ Comment deleted',
-        );
-
-
-      } catch (err) {
-
-        console.error(
-          '❌ Delete comment error:',
-          err?.response?.data ||
-          err?.message ||
-          err,
-        );
-
-
-        setComments(
-          previousComments,
-        );
-
-
-        showPopup(
-          'Unable to Delete',
-          err?.response?.data?.message ||
-          err?.message ||
-          'Unable to delete comment.',
-        );
-
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Unable to delete comment.');
       }
 
-    };
+      /*
+       * Reload blog.
+       *
+       * Backend provides the correct
+       * commentsCount.
+       */
 
+      await loadBlog();
+
+      console.log('✅ Comment deleted');
+    } catch (err) {
+      console.error(
+        '❌ Delete comment error:',
+        err?.response?.data || err?.message || err,
+      );
+
+      setComments(previousComments);
+
+      showPopup(
+        'Unable to Delete',
+        err?.response?.data?.message ||
+          err?.message ||
+          'Unable to delete comment.',
+      );
+    }
+  };
 
   // ===================================================
   // LOADING
   // ===================================================
 
   if (loading) {
-
-    return (
-      <LoadingState
-        message="Loading blog..."
-      />
-    );
-
+    return <LoadingState message="Loading blog..." />;
   }
-
 
   // ===================================================
   // ERROR
   // ===================================================
 
-  if (
-    error ||
-    !blog
-  ) {
-
+  if (error || !blog) {
     return (
-      <ErrorState
-        message={
-          error ||
-          'Blog not found.'
-        }
-        onRetry={
-          loadBlog
-        }
-      />
+      <ErrorState message={error || 'Blog not found.'} onRetry={loadBlog} />
     );
-
   }
-
 
   // ===================================================
   // BLOG DATA
   // ===================================================
 
-  const title =
-    blog?.title ||
-    'Untitled Blog';
+  const title = blog?.title || 'Untitled Blog';
 
-
-  const description =
-    blog?.description ||
-    '';
-
+  const description = blog?.description || '';
 
   const authorName =
-    blog?.author?.name ||
-    blog?.author?.employee_details?.name ||
-    blog?.authorName ||
-    'Manas User';
-
-
+    blog?.authorType === 'guest'
+      ? blog?.guestAuthor?.name || 'Guest User'
+      : blog?.author?.employee_details?.name ||
+        blog?.author?.name ||
+        blog?.authorName ||
+        'Employee User';
   /*
    * IMPORTANT:
    *
    * likesCount comes ONLY from backend.
    */
 
-  const likesCount =
-    Number(
-      blog?.likesCount,
-    ) || 0;
+  const likesCount = Number(blog?.likesCount) || 0;
 
-
-  const commentsCount =
-    Number(
-      blog?.commentsCount,
-    ) || 0;
-
+  const commentsCount = Number(blog?.commentsCount) || 0;
 
   // ===================================================
   // RENDER
   // ===================================================
 
   return (
-
-    <View
-      style={styles.safeArea}
-    >
-
+    <View style={styles.safeArea}>
       {/* ================================================= */}
       {/* HEADER */}
       {/* ================================================= */}
 
-      <View
-        style={styles.topBar}
-      >
-
+      <View style={styles.topBar}>
         <TouchableOpacity
-          onPress={() =>
-            navigation.goBack()
-          }
+          onPress={() => navigation.goBack()}
           hitSlop={{
             top: 10,
             bottom: 10,
@@ -1194,17 +703,9 @@ const BlogDetailScreen = ({
             right: 10,
           }}
         >
-
-          <Text
-            style={styles.backText}
-          >
-            ← Blog
-          </Text>
-
+          <Text style={styles.backText}>← Blog</Text>
         </TouchableOpacity>
-
       </View>
-
 
       {/* ================================================= */}
       {/* BLOG */}
@@ -1212,138 +713,54 @@ const BlogDetailScreen = ({
 
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={
-          styles.content
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.title}>{title}</Text>
 
-        <Text
-          style={styles.title}
-        >
-          {title}
-        </Text>
+        <Text style={styles.author}>{authorName}</Text>
 
-
-        <Text
-          style={styles.author}
-        >
-          {authorName}
-        </Text>
-
-
-        <Text
-          style={styles.date}
-        >
-          {formatDate(
-            blog?.createdAt,
-          )}
-        </Text>
-
+        <Text style={styles.date}>{formatDate(blog?.createdAt)}</Text>
 
         {blog?.image ? (
-
-          <BlogImage
-            uri={
-              blog.image
-            }
-            style={
-              styles.image
-            }
-          />
-
+          <BlogImage uri={blog.image} style={styles.image} />
         ) : null}
 
-
-        <Text
-          style={styles.description}
-        >
-          {description}
-        </Text>
-
+        <Text style={styles.description}>{description}</Text>
 
         {/* ================================================= */}
         {/* ACTIONS */}
         {/* ================================================= */}
 
-        <View
-          style={styles.actions}
-        >
-
+        <View style={styles.actions}>
           {/* ================================================= */}
           {/* LIKE */}
           {/* ================================================= */}
 
           <TouchableOpacity
-            style={
-              styles.actionButton
-            }
-            onPress={
-              handleToggleLike
-            }
-            disabled={
-              likeBusy
-            }
+            style={styles.actionButton}
+            onPress={handleToggleLike}
+            disabled={likeBusy}
             activeOpacity={0.7}
           >
+            <Text style={styles.actionIcon}>{isLiked ? '❤️' : '♡'}</Text>
 
-            <Text
-              style={
-                styles.actionIcon
-              }
-            >
-              {isLiked
-                ? '❤️'
-                : '♡'}
-            </Text>
-
-
-            <Text
-              style={
-                styles.actionText
-              }
-            >
-              {likesCount}
-            </Text>
-
+            <Text style={styles.actionText}>{likesCount}</Text>
           </TouchableOpacity>
-
 
           {/* ================================================= */}
           {/* COMMENTS */}
           {/* ================================================= */}
 
           <TouchableOpacity
-            style={
-              styles.actionButton
-            }
-            onPress={
-              openComments
-            }
+            style={styles.actionButton}
+            onPress={openComments}
             activeOpacity={0.7}
           >
+            <Text style={styles.actionIcon}>💬</Text>
 
-            <Text
-              style={
-                styles.actionIcon
-              }
-            >
-              💬
-            </Text>
-
-
-            <Text
-              style={
-                styles.actionText
-              }
-            >
-              {commentsCount}
-            </Text>
-
+            <Text style={styles.actionText}>{commentsCount}</Text>
           </TouchableOpacity>
-
 
           {/* ================================================= */}
           {/* SHARE */}
@@ -1380,740 +797,449 @@ const BlogDetailScreen = ({
             </Text>
 
           </TouchableOpacity> */}
-
         </View>
-
       </ScrollView>
-
 
       {/* ================================================= */}
       {/* COMMENTS BOTTOM SHEET */}
       {/* ================================================= */}
 
       <Modal
-        visible={
-          commentsVisible
-        }
+        visible={commentsVisible}
         transparent
         animationType="slide"
-        onRequestClose={
-          closeComments
-        }
+        onRequestClose={closeComments}
       >
-
         <KeyboardAvoidingView
-          style={
-            styles.modalContainer
-          }
-          behavior={
-            Platform.OS === 'ios'
-              ? 'padding'
-              : 'height'
-          }
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-
           {/* ================================================= */}
           {/* BACKDROP */}
           {/* ================================================= */}
 
           <TouchableOpacity
-            style={
-              styles.backdrop
-            }
+            style={styles.backdrop}
             activeOpacity={1}
-            onPress={
-              closeComments
-            }
+            onPress={closeComments}
           />
-
 
           {/* ================================================= */}
           {/* COMMENT SHEET */}
           {/* ================================================= */}
 
-          <View
-            style={
-              styles.commentSheet
-            }
-          >
-
+          <View style={styles.commentSheet}>
             {/* ================================================= */}
             {/* DRAG HANDLE */}
             {/* ================================================= */}
 
-            <View
-              style={
-                styles.dragHandle
-              }
-            />
-
+            <View style={styles.dragHandle} />
 
             {/* ================================================= */}
             {/* HEADER */}
             {/* ================================================= */}
 
-            <View
-              style={
-                styles.commentHeader
-              }
-            >
+            <View style={styles.commentHeader}>
+              <View style={styles.headerSpacer} />
 
-              <View
-                style={
-                  styles.headerSpacer
-                }
-              />
-
-
-              <Text
-                style={
-                  styles.commentHeaderTitle
-                }
-              >
-                Comments
-              </Text>
-
+              <Text style={styles.commentHeaderTitle}>Comments</Text>
 
               <TouchableOpacity
-                style={
-                  styles.closeButton
-                }
-                onPress={
-                  closeComments
-                }
+                style={styles.closeButton}
+                onPress={closeComments}
               >
-
-                <Text
-                  style={
-                    styles.closeText
-                  }
-                >
-                  ✕
-                </Text>
-
+                <Text style={styles.closeText}>✕</Text>
               </TouchableOpacity>
-
             </View>
-
 
             {/* ================================================= */}
             {/* COMMENTS */}
             {/* ================================================= */}
 
             {commentsLoading ? (
+              <View style={styles.commentsLoading}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
 
-              <View
-                style={
-                  styles.commentsLoading
-                }
-              >
-
-                <ActivityIndicator
-                  size="small"
-                  color="#FFFFFF"
-                />
-
-                <Text
-                  style={
-                    styles.loadingCommentsText
-                  }
-                >
+                <Text style={styles.loadingCommentsText}>
                   Loading comments...
                 </Text>
-
               </View>
-
             ) : (
-
               <FlatList
-                data={
-                  comments
-                }
-
-                keyExtractor={(
-                  item,
-                  index,
-                ) =>
-                  item?._id ||
-                  `comment-${index}`
-                }
-
-                renderItem={({
-                  item,
-                }) => (
-
+                data={comments}
+                keyExtractor={(item, index) => item?._id || `comment-${index}`}
+                renderItem={({ item }) => (
                   <CommentItem
-                    comment={
-                      item
-                    }
-
-                    timeAgo={
-                      timeAgo(
-                        item?.createdAt,
-                      )
-                    }
-
+                    comment={item}
+                    timeAgo={timeAgo(item?.createdAt)}
                     onDelete={
                       item?._id
-                        ? () =>
-                          handleDeleteComment(
-                            item._id,
-                          )
+                        ? () => handleDeleteComment(item._id)
                         : undefined
                     }
                   />
-
                 )}
-
                 contentContainerStyle={
                   comments.length === 0
                     ? styles.emptyCommentsContent
                     : styles.commentsList
                 }
-
-                showsVerticalScrollIndicator={
-                  false
-                }
-
+                showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-
                 ListEmptyComponent={
+                  <View style={styles.emptyComments}>
+                    <Text style={styles.emptyCommentsIcon}>💬</Text>
 
-                  <View
-                    style={
-                      styles.emptyComments
-                    }
-                  >
-
-                    <Text
-                      style={
-                        styles.emptyCommentsIcon
-                      }
-                    >
-                      💬
-                    </Text>
-
-
-                    <Text
-                      style={
-                        styles.emptyCommentsTitle
-                      }
-                    >
+                    <Text style={styles.emptyCommentsTitle}>
                       No comments yet
                     </Text>
 
-
-                    <Text
-                      style={
-                        styles.emptyCommentsText
-                      }
-                    >
-                      Be the first to
-                      comment.
+                    <Text style={styles.emptyCommentsText}>
+                      Be the first to comment.
                     </Text>
-
                   </View>
-
                 }
               />
-
             )}
-
 
             {/* ================================================= */}
             {/* COMMENT INPUT */}
             {/* ================================================= */}
 
             <CommentInput
-              onSubmit={
-                handleAddComment
-              }
-              submitting={
-                commentSubmitting
-              }
+              onSubmit={handleAddComment}
+              submitting={commentSubmitting}
             />
-
           </View>
-
         </KeyboardAvoidingView>
-
       </Modal>
-
 
       {/* ================================================= */}
       {/* POPUP */}
       {/* ================================================= */}
 
       {popup.visible && (
-
         <Popup
-          title={
-            popup.title
-          }
-          message={
-            popup.message
-          }
-          onClose={
-            closePopup
-          }
-          autoClose={
-            true
-          }
-          autoCloseDelay={
-            5000
-          }
+          title={popup.title}
+          message={popup.message}
+          onClose={closePopup}
+          autoClose={true}
+          autoCloseDelay={5000}
         />
-
       )}
-
     </View>
   );
 };
-
 
 // =====================================================
 // STYLES
 // =====================================================
 
-const styles =
-  StyleSheet.create({
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+  },
 
-    safeArea: {
-      flex: 1,
-      backgroundColor:
-        COLORS.surface,
-    },
+  flex: {
+    flex: 1,
+  },
 
+  // =================================================
+  // TOP BAR
+  // =================================================
 
-    flex: {
-      flex: 1,
-    },
+  topBar: {
+    paddingHorizontal: SPACING.lg,
 
+    paddingVertical: SPACING.md,
 
-    // =================================================
-    // TOP BAR
-    // =================================================
+    borderBottomWidth: 1,
 
-    topBar: {
-      paddingHorizontal:
-        SPACING.lg,
+    borderBottomColor: COLORS.border,
 
-      paddingVertical:
-        SPACING.md,
+    backgroundColor: COLORS.surface,
+  },
 
-      borderBottomWidth:
-        1,
+  backText: {
+    fontSize: FONT.md,
 
-      borderBottomColor:
-        COLORS.border,
+    fontWeight: '700',
 
-      backgroundColor:
-        COLORS.surface,
-    },
+    color: COLORS.text,
+  },
 
+  // =================================================
+  // BLOG
+  // =================================================
 
-    backText: {
-      fontSize:
-        FONT.md,
+  content: {
+    padding: SPACING.lg,
 
-      fontWeight:
-        '700',
+    paddingBottom: 100,
+  },
 
-      color:
-        COLORS.text,
-    },
+  title: {
+    fontSize: FONT.xxl,
 
+    fontWeight: '800',
 
-    // =================================================
-    // BLOG
-    // =================================================
+    color: COLORS.text,
 
-    content: {
-      padding:
-        SPACING.lg,
+    marginBottom: 6,
+  },
 
-      paddingBottom:
-        100,
-    },
+  author: {
+    fontSize: FONT.md,
 
+    fontWeight: '600',
 
-    title: {
-      fontSize:
-        FONT.xxl,
+    color: COLORS.primaryLight,
+  },
 
-      fontWeight:
-        '800',
+  date: {
+    fontSize: FONT.sm,
 
-      color:
-        COLORS.text,
+    color: COLORS.textMuted,
 
-      marginBottom:
-        6,
-    },
+    marginTop: 4,
 
+    marginBottom: SPACING.lg,
+  },
 
-    author: {
-      fontSize:
-        FONT.md,
+  image: {
+    width: '100%',
 
-      fontWeight:
-        '600',
+    height: 220,
 
-      color:
-        COLORS.primaryLight,
-    },
+    borderRadius: 12,
 
+    marginBottom: SPACING.lg,
+  },
 
-    date: {
-      fontSize:
-        FONT.sm,
+  description: {
+    fontSize: FONT.md,
 
-      color:
-        COLORS.textMuted,
+    lineHeight: 23,
 
-      marginTop:
-        4,
+    color: COLORS.text,
 
-      marginBottom:
-        SPACING.lg,
-    },
+    marginBottom: SPACING.lg,
+  },
 
+  // =================================================
+  // ACTIONS
+  // =================================================
 
-    image: {
-      width:
-        '100%',
+  actions: {
+    flexDirection: 'row',
 
-      height:
-        220,
+    alignItems: 'center',
 
-      borderRadius:
-        12,
+    borderTopWidth: 1,
 
-      marginBottom:
-        SPACING.lg,
-    },
+    borderBottomWidth: 1,
 
+    borderColor: COLORS.border,
 
-    description: {
-      fontSize:
-        FONT.md,
+    paddingVertical: SPACING.md,
 
-      lineHeight:
-        23,
+    justifyContent: 'space-around',
+  },
 
-      color:
-        COLORS.text,
+  actionButton: {
+    flexDirection: 'row',
 
-      marginBottom:
-        SPACING.lg,
-    },
+    alignItems: 'center',
 
+    paddingHorizontal: SPACING.md,
 
-    // =================================================
-    // ACTIONS
-    // =================================================
+    paddingVertical: 6,
+  },
 
-    actions: {
-      flexDirection:
-        'row',
+  actionIcon: {
+    fontSize: 21,
 
-      alignItems:
-        'center',
+    marginRight: 6,
+  },
 
-      borderTopWidth:
-        1,
+  actionText: {
+    fontSize: FONT.sm,
 
-      borderBottomWidth:
-        1,
+    fontWeight: '700',
 
-      borderColor:
-        COLORS.border,
+    color: COLORS.text,
+  },
 
-      paddingVertical:
-        SPACING.md,
+  // =================================================
+  // MODAL
+  // =================================================
 
-      justifyContent:
-        'space-around',
-    },
+  modalContainer: {
+    flex: 1,
 
+    justifyContent: 'flex-end',
+  },
 
-    actionButton: {
-      flexDirection:
-        'row',
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
 
-      alignItems:
-        'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
 
-      paddingHorizontal:
-        SPACING.md,
+  // =================================================
+  // COMMENT SHEET
+  // =================================================
 
-      paddingVertical:
-        6,
-    },
+  commentSheet: {
+    height: '78%',
 
+    backgroundColor: '#171A1D',
 
-    actionIcon: {
-      fontSize:
-        21,
+    borderTopLeftRadius: 24,
 
-      marginRight:
-        6,
-    },
+    borderTopRightRadius: 24,
 
+    overflow: 'hidden',
+  },
 
-    actionText: {
-      fontSize:
-        FONT.sm,
+  dragHandle: {
+    width: 44,
 
-      fontWeight:
-        '700',
+    height: 4,
 
-      color:
-        COLORS.text,
-    },
+    borderRadius: 2,
 
+    backgroundColor: '#858A8F',
 
-    // =================================================
-    // MODAL
-    // =================================================
+    alignSelf: 'center',
 
-    modalContainer: {
-      flex: 1,
+    marginTop: 10,
 
-      justifyContent:
-        'flex-end',
-    },
+    marginBottom: 8,
+  },
 
+  // =================================================
+  // COMMENT HEADER
+  // =================================================
 
-    backdrop: {
-      ...StyleSheet.absoluteFillObject,
+  commentHeader: {
+    height: 52,
 
-      backgroundColor:
-        'rgba(0,0,0,0.55)',
-    },
+    flexDirection: 'row',
 
+    alignItems: 'center',
 
-    // =================================================
-    // COMMENT SHEET
-    // =================================================
+    justifyContent: 'space-between',
 
-    commentSheet: {
-      height:
-        '78%',
+    paddingHorizontal: 16,
 
-      backgroundColor:
-        '#171A1D',
+    borderBottomWidth: 1,
 
-      borderTopLeftRadius:
-        24,
+    borderBottomColor: '#292D31',
+  },
 
-      borderTopRightRadius:
-        24,
+  headerSpacer: {
+    width: 40,
+  },
 
-      overflow:
-        'hidden',
-    },
+  commentHeaderTitle: {
+    flex: 1,
 
+    textAlign: 'center',
 
-    dragHandle: {
-      width:
-        44,
+    fontSize: 18,
 
-      height:
-        4,
+    fontWeight: '700',
 
-      borderRadius:
-        2,
+    color: '#FFFFFF',
+  },
 
-      backgroundColor:
-        '#858A8F',
+  closeButton: {
+    width: 40,
 
-      alignSelf:
-        'center',
+    height: 40,
 
-      marginTop:
-        10,
+    borderRadius: 20,
 
-      marginBottom:
-        8,
-    },
+    alignItems: 'center',
 
+    justifyContent: 'center',
+  },
 
-    // =================================================
-    // COMMENT HEADER
-    // =================================================
+  closeText: {
+    fontSize: 20,
 
-    commentHeader: {
-      height:
-        52,
+    color: '#FFFFFF',
+  },
 
-      flexDirection:
-        'row',
+  // =================================================
+  // COMMENTS LIST
+  // =================================================
 
-      alignItems:
-        'center',
+  commentsList: {
+    paddingHorizontal: 16,
 
-      justifyContent:
-        'space-between',
+    paddingTop: 12,
 
-      paddingHorizontal:
-        16,
+    paddingBottom: 15,
+  },
 
-      borderBottomWidth:
-        1,
+  emptyCommentsContent: {
+    flexGrow: 1,
 
-      borderBottomColor:
-        '#292D31',
-    },
+    justifyContent: 'center',
 
+    alignItems: 'center',
 
-    headerSpacer: {
-      width:
-        40,
-    },
+    paddingHorizontal: 20,
+  },
 
+  emptyComments: {
+    alignItems: 'center',
+  },
 
-    commentHeaderTitle: {
-      flex: 1,
+  emptyCommentsIcon: {
+    fontSize: 38,
 
-      textAlign:
-        'center',
+    marginBottom: 12,
+  },
 
-      fontSize:
-        18,
+  emptyCommentsTitle: {
+    fontSize: 17,
 
-      fontWeight:
-        '700',
+    fontWeight: '700',
 
-      color:
-        '#FFFFFF',
-    },
+    color: '#FFFFFF',
+  },
 
+  emptyCommentsText: {
+    marginTop: 6,
 
-    closeButton: {
-      width:
-        40,
+    fontSize: 14,
 
-      height:
-        40,
+    color: '#9DA3A8',
+  },
 
-      borderRadius:
-        20,
+  // =================================================
+  // LOADING
+  // =================================================
 
-      alignItems:
-        'center',
+  commentsLoading: {
+    flex: 1,
 
-      justifyContent:
-        'center',
-    },
+    alignItems: 'center',
 
+    justifyContent: 'center',
+  },
 
-    closeText: {
-      fontSize:
-        20,
+  loadingCommentsText: {
+    marginTop: 10,
 
-      color:
-        '#FFFFFF',
-    },
+    color: '#AEB4B9',
 
-
-    // =================================================
-    // COMMENTS LIST
-    // =================================================
-
-    commentsList: {
-      paddingHorizontal:
-        16,
-
-      paddingTop:
-        12,
-
-      paddingBottom:
-        15,
-    },
-
-
-    emptyCommentsContent: {
-      flexGrow:
-        1,
-
-      justifyContent:
-        'center',
-
-      alignItems:
-        'center',
-
-      paddingHorizontal:
-        20,
-    },
-
-
-    emptyComments: {
-      alignItems:
-        'center',
-    },
-
-
-    emptyCommentsIcon: {
-      fontSize:
-        38,
-
-      marginBottom:
-        12,
-    },
-
-
-    emptyCommentsTitle: {
-      fontSize:
-        17,
-
-      fontWeight:
-        '700',
-
-      color:
-        '#FFFFFF',
-    },
-
-
-    emptyCommentsText: {
-      marginTop:
-        6,
-
-      fontSize:
-        14,
-
-      color:
-        '#9DA3A8',
-    },
-
-
-    // =================================================
-    // LOADING
-    // =================================================
-
-    commentsLoading: {
-      flex: 1,
-
-      alignItems:
-        'center',
-
-      justifyContent:
-        'center',
-    },
-
-
-    loadingCommentsText: {
-      marginTop:
-        10,
-
-      color:
-        '#AEB4B9',
-
-      fontSize:
-        14,
-    },
-
-  });
-
+    fontSize: 14,
+  },
+});
 
 export default BlogDetailScreen;

@@ -1,8 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   View,
@@ -21,13 +17,9 @@ import {
   Keyboard,
 } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_URL } from '@env';
-import {
-  useFocusEffect,
-  useRoute,
-} from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import { navigationRef } from '../../../src/utils/NavigationService';
 
@@ -38,7 +30,10 @@ import {
   getBlogComments,
   likeBlog,
   unlikeBlog,
+  addBlogComment,
 } from '../../../src/api/blogApi';
+
+import { getBlogAuthSession } from '../../../src/utils/auth';
 
 import { getCommentAuthorName } from './CommentItem';
 
@@ -48,60 +43,28 @@ import BlogCard from '../../blog/BlogCard';
    CONFIG
 ===================================================== */
 
-
-
-
 /* =====================================================
    GET ALL BLOGS
 ===================================================== */
 
 const getAllBlogs = async () => {
   try {
-    const token =
-      await AsyncStorage.getItem('userToken');
+    const url = `${API_URL}/blog/all`;
 
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token
-        ? {
-          Authorization: `Bearer ${token}`,
-        }
-        : {}),
-    };
+    console.log('🌐 Blog API:', url);
 
-    const url =
-      `${API_URL}/blog/all`;
-
-    console.log(
-      '🌐 Blog API:',
-      url,
-    );
-
-    const response =
-      await axios.get(
-        url,
-        {
-          headers,
-          timeout: 15000,
-        },
-      );
-
-    // console.log(
-    //   '✅ Get All Blogs Response:',
-    //   JSON.stringify(
-    //     response.data,
-    //     null,
-    //     2,
-    //   ),
-    // );
+    const response = await axios.get(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000,
+    });
 
     return response.data;
   } catch (error) {
     console.log(
       '❌ Get All Blogs Error:',
-      error?.response?.data ||
-      error?.message ||
-      error,
+      error?.response?.data || error?.message || error,
     );
 
     throw error;
@@ -112,102 +75,56 @@ const getAllBlogs = async () => {
    BLOG FEED SCREEN
 ===================================================== */
 
-const BlogFeedScreen = ({
-  navigation,
-  embedded = false,
-
-}) => {
+const BlogFeedScreen = ({ navigation, embedded = false }) => {
   const route = useRoute();
 
   /* ===================================================
      BLOG STATE
   =================================================== */
 
-  const [
-    blogs,
-    setBlogs,
-  ] = useState([]);
+  const [blogs, setBlogs] = useState([]);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [
-    error,
-    setError,
-  ] = useState(null);
+  const [error, setError] = useState(null);
 
   /* ===================================================
      COMMENT STATE
   =================================================== */
 
-  const [
-    commentModalVisible,
-    setCommentModalVisible,
-  ] = useState(false);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
 
-  const [
-    selectedBlogId,
-    setSelectedBlogId,
-  ] = useState(null);
+  const [selectedBlogId, setSelectedBlogId] = useState(null);
 
-  const [
-    commentText,
-    setCommentText,
-  ] = useState('');
+  const [commentText, setCommentText] = useState('');
 
-  const [
-    commentSubmitting,
-    setCommentSubmitting,
-  ] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
 
-  const [
-    comments,
-    setComments,
-  ] = useState([]);
+  const [comments, setComments] = useState([]);
 
-  const [
-    commentsLoading,
-    setCommentsLoading,
-  ] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   /* ===================================================
      POPUP
   =================================================== */
 
-  const [
-    popup,
-    setPopup,
-  ] = useState({
+  const [popup, setPopup] = useState({
     visible: false,
     title: '',
     message: '',
   });
 
-  const showPopup = useCallback(
-    (title, message) => {
-      console.log(
-        '🔔 Popup:',
-        title,
-        message,
-      );
+  const showPopup = useCallback((title, message) => {
+    console.log('🔔 Popup:', title, message);
 
-      setPopup({
-        visible: true,
-        title:
-          title || 'Message',
-        message:
-          message || '',
-      });
-    },
-    [],
-  );
+    setPopup({
+      visible: true,
+      title: title || 'Message',
+      message: message || '',
+    });
+  }, []);
 
   const closePopup = useCallback(() => {
     setPopup({
@@ -224,172 +141,111 @@ const BlogFeedScreen = ({
      We keep ID extraction in ONE place.
   =================================================== */
 
-  const getBlogId = useCallback(
-    blog => {
-      if (!blog) {
-        return null;
-      }
+  const getBlogId = useCallback(blog => {
+    if (!blog) {
+      return null;
+    }
 
-      return (
-        blog?._id ||
-        blog?.id ||
-        null
-      );
-    },
-    [],
-  );
+    return blog?._id || blog?.id || null;
+  }, []);
 
   /* ===================================================
      LOAD COMMENTS
   =================================================== */
 
-  const loadComments = useCallback(
-    async blogId => {
-      if (!blogId) {
-        console.log(
-          '❌ loadComments: no blog ID',
-        );
+  const loadComments = useCallback(async blogId => {
+    if (!blogId) {
+      console.log('❌ loadComments: no blog ID');
 
-        setComments([]);
-        return;
-      }
+      setComments([]);
+      return;
+    }
 
-      try {
-        setCommentsLoading(true);
+    try {
+      setCommentsLoading(true);
 
-        console.log(
-          '💬 Loading comments for:',
-          blogId,
-        );
+      console.log('💬 Loading comments for:', blogId);
 
-        const response =
-          await getBlogComments(
-            blogId,
-          );
+      const response = await getBlogComments(blogId);
 
-        console.log(
-          '💬 Comments response:',
-          JSON.stringify(
-            response,
-            null,
-            2,
-          ),
-        );
+      console.log('💬 Comments response:', JSON.stringify(response, null, 2));
 
-        const commentList =
-          Array.isArray(
-            response?.data,
-          )
-            ? response.data
-            : Array.isArray(response)
-              ? response
-              : [];
+      const commentList = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+        ? response
+        : [];
 
-        setComments(
-          commentList,
-        );
-      } catch (error) {
-        console.log(
-          '❌ Load comments error:',
-          error?.response?.data ||
-          error?.message ||
-          error,
-        );
+      setComments(commentList);
+    } catch (error) {
+      console.log(
+        '❌ Load comments error:',
+        error?.response?.data || error?.message || error,
+      );
 
-        setComments([]);
-      } finally {
-        setCommentsLoading(
-          false,
-        );
-      }
-    },
-    [],
-  );
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, []);
 
   /* ===================================================
      OPEN COMMENT MODAL
   =================================================== */
 
-  const openCommentModal =
-    useCallback(
-      blog => {
-        const blogId =
-          getBlogId(blog);
+  const openCommentModal = useCallback(
+    blog => {
+      const blogId = getBlogId(blog);
 
-        console.log(
-          '💬 Open comments',
+      console.log('💬 Open comments');
+
+      console.log('💬 Blog:', blog);
+
+      console.log('💬 Blog ID:', blogId);
+
+      if (!blogId) {
+        showPopup(
+          'Unable to Comment',
+          'This blog does not contain a valid ID.',
         );
 
-        console.log(
-          '💬 Blog:',
-          blog,
-        );
+        return;
+      }
 
-        console.log(
-          '💬 Blog ID:',
-          blogId,
-        );
+      setSelectedBlogId(String(blogId));
 
-        if (!blogId) {
-          showPopup(
-            'Unable to Comment',
-            'This blog does not contain a valid ID.',
-          );
+      setCommentText('');
 
-          return;
-        }
+      setComments([]);
 
-        setSelectedBlogId(
-          String(blogId),
-        );
+      setCommentModalVisible(true);
 
-        setCommentText('');
-
-        setComments([]);
-
-        setCommentModalVisible(
-          true,
-        );
-
-        loadComments(
-          String(blogId),
-        );
-      },
-      [
-        getBlogId,
-        loadComments,
-        showPopup,
-      ],
-    );
+      loadComments(String(blogId));
+    },
+    [getBlogId, loadComments, showPopup],
+  );
 
   /* ===================================================
      CLOSE COMMENT MODAL
   =================================================== */
 
-  const closeCommentModal =
-    useCallback(() => {
-      if (commentSubmitting) {
-        return;
-      }
+  const closeCommentModal = useCallback(() => {
+    if (commentSubmitting) {
+      return;
+    }
 
-      console.log(
-        '❌ Closing comment modal',
-      );
+    console.log('❌ Closing comment modal');
 
-      Keyboard.dismiss();
+    Keyboard.dismiss();
 
-      setCommentModalVisible(
-        false,
-      );
+    setCommentModalVisible(false);
 
-      setSelectedBlogId(null);
+    setSelectedBlogId(null);
 
-      setCommentText('');
+    setCommentText('');
 
-      setComments([]);
-    }, [
-      commentSubmitting,
-    ]);
+    setComments([]);
+  }, [commentSubmitting]);
 
   /* ===================================================
      OPEN BLOG DETAIL
@@ -397,417 +253,117 @@ const BlogFeedScreen = ({
 
   const handleOpenBlog = useCallback(
     blog => {
-
       const blogId = blog?._id;
 
-      console.log(
-        '================================',
-      );
+      console.log('================================');
 
-      console.log(
-        '📖 OPEN BLOG',
-      );
+      console.log('📖 OPEN BLOG');
 
-      console.log(
-        'Full blog:',
-        JSON.stringify(blog, null, 2),
-      );
+      console.log('Full blog:', JSON.stringify(blog, null, 2));
 
-      console.log(
-        'Blog ID:',
-        blogId,
-      );
+      console.log('Blog ID:', blogId);
 
-      console.log(
-        'Navigation exists:',
-        !!navigation,
-      );
+      console.log('Navigation exists:', !!navigation);
 
       if (!blogId) {
+        console.log('❌ Cannot open BlogDetail: blog ID missing');
 
-        console.log(
-          '❌ Cannot open BlogDetail: blog ID missing',
-        );
-
-        showPopup(
-          'Unable to Open Blog',
-          'Blog information is missing.',
-        );
+        showPopup('Unable to Open Blog', 'Blog information is missing.');
 
         return;
       }
 
-      navigation.navigate(
-        'BlogDetail',
-        {
-          blogId: String(blogId),
-        },
-      );
-
+      navigation.navigate('BlogDetail', {
+        blogId: String(blogId),
+      });
     },
-    [
-      navigation,
-      showPopup,
-    ],
+    [navigation, showPopup],
   );
 
   /* ===================================================
      LIKE / UNLIKE
   =================================================== */
 
-  const handleLikePress =
-    useCallback(
-      async blog => {
-        const blogId =
-          getBlogId(blog);
+  const handleLikePress = useCallback(
+    async blog => {
+      const blogId = getBlogId(blog);
 
-        const currentlyLiked =
-          Boolean(
-            blog?.isLikedByMe ??
-            blog?.liked ??
-            blog?.isLiked ??
-            false,
-          );
+      const currentlyLiked = Boolean(
+        blog?.isLikedByMe ?? blog?.liked ?? blog?.isLiked ?? false,
+      );
 
-        console.log(
-          '❤️ Like pressed',
-        );
+      console.log('❤️ Like pressed');
 
-        console.log(
-          '❤️ Blog ID:',
-          blogId,
-        );
+      console.log('❤️ Blog ID:', blogId);
 
-        console.log(
-          '❤️ Current liked:',
-          currentlyLiked,
-        );
+      console.log('❤️ Current liked:', currentlyLiked);
 
-        if (!blogId) {
-          showPopup(
-            'Unable to Like',
-            'This blog does not contain a valid ID.',
-          );
+      if (!blogId) {
+        showPopup('Unable to Like', 'This blog does not contain a valid ID.');
 
-          return;
-        }
+        return;
+      }
 
-        try {
-          const token =
-            await AsyncStorage.getItem(
-              'userToken',
-            );
-
-          if (!token) {
-            navigation.navigate(
-              'Login',
-            );
-
-            return;
-          }
-
-          const response =
-            currentlyLiked
-              ? await unlikeBlog(
-                blogId,
-              )
-              : await likeBlog(
-                blogId,
-              );
-
-          console.log(
-            '❤️ Like API response:',
-            JSON.stringify(
-              response,
-              null,
-              2,
-            ),
-          );
-
-          if (
-            response?.success ===
-            false
-          ) {
-            showPopup(
-              currentlyLiked
-                ? 'Unable to Unlike'
-                : 'Unable to Like',
-              response?.message ||
-              'Unable to update like.',
-            );
-
-            return;
-          }
-
-          const backendLikesCount =
-            response?.likesCount ??
-            response?.data
-              ?.likesCount ??
-            response?.blog
-              ?.likesCount;
-
-          const currentCount =
-            Number(
-              blog?.likesCount ??
-              blog?.likeCount,
-            ) || 0;
-
-          const finalCount =
-            backendLikesCount !==
-              undefined &&
-              Number(
-                backendLikesCount,
-              ) >= 0
-              ? Number(
-                backendLikesCount,
-              )
-              : currentlyLiked
-                ? Math.max(
-                  0,
-                  currentCount - 1,
-                )
-                : currentCount + 1;
-
-          setBlogs(
-            previousBlogs =>
-              previousBlogs.map(
-                item => {
-                  const itemId =
-                    getBlogId(
-                      item,
-                    );
-
-                  if (
-                    String(
-                      itemId,
-                    ) !==
-                    String(
-                      blogId,
-                    )
-                  ) {
-                    return item;
-                  }
-
-                  return {
-                    ...item,
-                    likesCount:
-                      finalCount,
-                    isLikedByMe:
-                      !currentlyLiked,
-                  };
-                },
-              ),
-          );
-        } catch (error) {
-          console.log(
-            '❌ Like API Error:',
-            error?.response
-              ?.data ||
-            error?.message ||
-            error,
-          );
-
-          if (
-            error?.response
-              ?.status === 401
-          ) {
-            await AsyncStorage.removeItem(
-              'userToken',
-            );
-
-            showPopup(
-              'Login Required',
-              'Your session has expired. Please login again.',
-            );
-
-            return;
-          }
-
-          showPopup(
-            currentlyLiked
-              ? 'Unable to Unlike'
-              : 'Unable to Like',
-            error?.response
-              ?.data?.message ||
-            'Unable to update this blog.',
-          );
-        }
-      },
-      [
-        getBlogId,
-        navigation,
-        showPopup,
-      ],
-    );
-
-  /* ===================================================
-     SUBMIT COMMENT
-  =================================================== */
-
-  const handleSubmitComment =
-    async () => {
       try {
-        const token =
-          await AsyncStorage.getItem(
-            'userToken',
-          );
+        const session = await getBlogAuthSession();
 
-        if (!token) {
-          closeCommentModal();
-
-          navigation.navigate(
-            'Login',
-          );
-
+        if (!session.isAuthenticated) {
+          navigation.navigate('Login');
           return;
         }
 
-        if (!selectedBlogId) {
+        const response = currentlyLiked
+          ? await unlikeBlog(blogId)
+          : await likeBlog(blogId);
+
+        console.log('❤️ Like API response:', JSON.stringify(response, null, 2));
+
+        if (response?.success === false) {
           showPopup(
-            'Unable to Comment',
-            'No blog is selected.',
+            currentlyLiked ? 'Unable to Unlike' : 'Unable to Like',
+            response?.message || 'Unable to update like.',
           );
 
           return;
         }
 
-        const trimmedComment =
-          commentText.trim();
+        const backendLikesCount =
+          response?.likesCount ??
+          response?.data?.likesCount ??
+          response?.blog?.likesCount;
 
-        if (!trimmedComment) {
-          showPopup(
-            'Comment Required',
-            'Please enter a comment.',
-          );
+        const currentCount = Number(blog?.likesCount ?? blog?.likeCount) || 0;
 
-          return;
-        }
+        const finalCount =
+          backendLikesCount !== undefined && Number(backendLikesCount) >= 0
+            ? Number(backendLikesCount)
+            : currentlyLiked
+            ? Math.max(0, currentCount - 1)
+            : currentCount + 1;
 
-        setCommentSubmitting(
-          true,
-        );
+        setBlogs(previousBlogs =>
+          previousBlogs.map(item => {
+            const itemId = getBlogId(item);
 
-        console.log(
-          '💬 Posting comment',
-        );
+            if (String(itemId) !== String(blogId)) {
+              return item;
+            }
 
-        console.log(
-          '💬 Blog ID:',
-          selectedBlogId,
-        );
-
-        const response =
-          await axios.post(
-            `${API_URL}/blog/${selectedBlogId}/comment`,
-            {
-              content:
-                trimmedComment,
-            },
-            {
-              timeout: 15000,
-
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-
-                'Content-Type':
-                  'application/json',
-              },
-            },
-          );
-
-        console.log(
-          '✅ Comment API response:',
-          JSON.stringify(
-            response.data,
-            null,
-            2,
-          ),
-        );
-
-        if (
-          response?.data?.success
-        ) {
-          setCommentText('');
-
-          await loadComments(
-            selectedBlogId,
-          );
-
-          setBlogs(
-            previousBlogs =>
-              previousBlogs.map(
-                blog => {
-                  const blogId =
-                    getBlogId(
-                      blog,
-                    );
-
-                  if (
-                    String(
-                      blogId,
-                    ) !==
-                    String(
-                      selectedBlogId,
-                    )
-                  ) {
-                    return blog;
-                  }
-
-                  return {
-                    ...blog,
-
-                    commentsCount:
-                      response
-                        ?.data
-                        ?.commentsCount ??
-                      (
-                        Number(
-                          blog
-                            ?.commentsCount ??
-                          blog
-                            ?.commentCount,
-                        ) || 0
-                      ) + 1,
-                  };
-                },
-              ),
-          );
-
-          showPopup(
-            'Comment Added',
-            response?.data
-              ?.message ||
-            'Your comment was added successfully.',
-          );
-
-          return;
-        }
-
-        showPopup(
-          'Unable to Comment',
-          response?.data
-            ?.message ||
-          'Unable to add your comment.',
+            return {
+              ...item,
+              likesCount: finalCount,
+              isLikedByMe: !currentlyLiked,
+            };
+          }),
         );
       } catch (error) {
         console.log(
-          '❌ Comment API Error:',
-          error?.response
-            ?.data ||
-          error?.message ||
-          error,
+          '❌ Like API Error:',
+          error?.response?.data || error?.message || error,
         );
 
-        if (
-          error?.response
-            ?.status === 401
-        ) {
-          await AsyncStorage.removeItem(
-            'userToken',
-          );
-
-          closeCommentModal();
+        if (error?.response?.status === 401) {
+          // await AsyncStorage.removeItem('userToken');
 
           showPopup(
             'Login Required',
@@ -818,175 +374,244 @@ const BlogFeedScreen = ({
         }
 
         showPopup(
-          'Unable to Comment',
-          error?.response
-            ?.data?.message ||
-          'Unable to add comment. Please try again.',
-        );
-      } finally {
-        setCommentSubmitting(
-          false,
+          currentlyLiked ? 'Unable to Unlike' : 'Unable to Like',
+          error?.response?.data?.message || 'Unable to update this blog.',
         );
       }
-    };
+    },
+    [getBlogId, navigation, showPopup],
+  );
 
+  /* ===================================================
+     SUBMIT COMMENT
+  =================================================== */
+
+  const handleSubmitComment = async () => {
+    try {
+      const session = await getBlogAuthSession();
+
+      if (!session.isAuthenticated) {
+        closeCommentModal();
+        navigation.navigate('Login');
+        return;
+      }
+
+      if (!selectedBlogId) {
+        showPopup('Unable to Comment', 'No blog is selected.');
+        return;
+      }
+
+      const trimmedComment = commentText.trim();
+
+      if (!trimmedComment) {
+        showPopup('Comment Required', 'Please enter a comment.');
+        return;
+      }
+
+      setCommentSubmitting(true);
+
+      console.log('💬 Posting comment');
+      console.log('💬 Blog ID:', selectedBlogId);
+
+      const response = await addBlogComment(selectedBlogId, trimmedComment);
+
+      console.log(
+        '✅ Comment API response:',
+        JSON.stringify(response, null, 2),
+      );
+
+      // =====================================================
+      // SUCCESS
+      // =====================================================
+
+      if (response?.success === true) {
+        console.log('✅ Comment added successfully');
+
+        // Clear input
+        setCommentText('');
+
+        // Refresh comments
+        await loadComments(selectedBlogId);
+
+        // Update comment count in feed
+        setBlogs(previousBlogs =>
+          previousBlogs.map(blog => {
+            const blogId = getBlogId(blog);
+
+            if (String(blogId) !== String(selectedBlogId)) {
+              return blog;
+            }
+
+            return {
+              ...blog,
+
+              commentsCount:
+                response?.commentsCount ??
+                (Number(blog?.commentsCount ?? blog?.commentCount) || 0) + 1,
+            };
+          }),
+        );
+
+        showPopup(
+          'Comment Added',
+          response?.message || 'Your comment was added successfully.',
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // UNEXPECTED RESPONSE
+      // =====================================================
+
+      console.log('⚠️ Unexpected comment response:', response);
+
+      showPopup(
+        'Unable to Comment',
+        response?.message || 'Unable to add your comment.',
+      );
+    } catch (error) {
+      console.log(
+        '❌ Comment API Error:',
+        error?.response?.data || error?.message || error,
+      );
+
+      // =====================================================
+      // AUTH ERROR
+      // =====================================================
+
+      if (error?.response?.status === 401) {
+        closeCommentModal();
+
+        showPopup(
+          'Login Required',
+          'Your session has expired. Please login again.',
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // OTHER ERROR
+      // =====================================================
+
+      showPopup(
+        'Unable to Comment',
+        error?.response?.data?.message ||
+          error?.message ||
+          'Unable to add comment. Please try again.',
+      );
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
   /* ===================================================
      CREATE BLOG
   =================================================== */
 
-  const handleCreateBlog =
-    async () => {
-      try {
-        const token =
-          await AsyncStorage.getItem(
-            'userToken',
-          );
+  const handleCreateBlog = async () => {
+    try {
+      const session = await getBlogAuthSession();
 
-        if (!token) {
-          navigation.navigate(
-            'Login',
-          );
+      if (!session.isAuthenticated) {
+        navigation.navigate('Login');
 
-          return;
-        }
-
-        navigation.navigate(
-          'CreateBlog',
-        );
-      } catch (error) {
-        console.log(
-          '❌ Create Blog auth error:',
-          error,
-        );
-
-        navigation.navigate(
-          'Login',
-        );
+        return;
       }
-    };
+
+      navigation.navigate('CreateBlog');
+    } catch (error) {
+      console.log('❌ Create Blog auth error:', error);
+
+      navigation.navigate('Login');
+    }
+  };
 
   /* ===================================================
      FETCH BLOGS
   =================================================== */
 
-  const fetchBlogs =
-    useCallback(
-      async () => {
-        try {
-          setError(null);
+  const fetchBlogs = useCallback(async () => {
+    try {
+      setError(null);
 
-          // console.log(
-          //   '📚 Fetching blogs...',
-          // );
+      // console.log(
+      //   '📚 Fetching blogs...',
+      // );
 
-          const response =
-            await getAllBlogs();
+      const response = await getAllBlogs();
 
-          // console.log(
-          //   '📚 Raw API response:',
-          //   JSON.stringify(
-          //     response,
-          //     null,
-          //     2,
-          //   ),
-          // );
+      // console.log(
+      //   '📚 Raw API response:',
+      //   JSON.stringify(
+      //     response,
+      //     null,
+      //     2,
+      //   ),
+      // );
 
-          let blogList = [];
+      let blogList = [];
 
-          if (
-            Array.isArray(
-              response?.blogs,
-            )
-          ) {
-            blogList =
-              response.blogs;
-          } else if (
-            Array.isArray(
-              response?.data,
-            )
-          ) {
-            blogList =
-              response.data;
-          } else if (
-            Array.isArray(
-              response,
-            )
-          ) {
-            blogList =
-              response;
-          }
+      if (Array.isArray(response?.blogs)) {
+        blogList = response.blogs;
+      } else if (Array.isArray(response?.data)) {
+        blogList = response.data;
+      } else if (Array.isArray(response)) {
+        blogList = response;
+      }
 
-          // console.log(
-          //   '📚 Blog count:',
-          //   blogList.length,
-          // );
+      // console.log(
+      //   '📚 Blog count:',
+      //   blogList.length,
+      // );
 
-          /*
-           * VERY IMPORTANT DEBUGGING
-           */
+      /*
+       * VERY IMPORTANT DEBUGGING
+       */
 
-          blogList.forEach(
-            (blog, index) => {
-              // console.log(
-              //   `📚 BLOG ${index} ID:`,
-              //   blog?._id ||
-              //   blog?.id ||
-              //   'MISSING',
-              // );
+      blogList.forEach((blog, index) => {
+        // console.log(
+        //   `📚 BLOG ${index} ID:`,
+        //   blog?._id ||
+        //   blog?.id ||
+        //   'MISSING',
+        // );
+        // console.log(
+        //   `📚 BLOG ${index}:`,
+        //   JSON.stringify(
+        //     blog,
+        //     null,
+        //     2,
+        //   ),
+        // );
+      });
 
-              // console.log(
-              //   `📚 BLOG ${index}:`,
-              //   JSON.stringify(
-              //     blog,
-              //     null,
-              //     2,
-              //   ),
-              // );
-            },
-          );
+      const normalizedBlogs = blogList.map(blog => ({
+        ...blog,
 
-          const normalizedBlogs =
-            blogList.map(
-              blog => ({
-                ...blog,
+        isLikedByMe: Boolean(
+          blog?.isLikedByMe ?? blog?.isLiked ?? blog?.liked ?? false,
+        ),
+      }));
 
-                isLikedByMe:
-                  Boolean(
-                    blog
-                      ?.isLikedByMe ??
-                    blog?.isLiked ??
-                    blog?.liked ??
-                    false,
-                  ),
-              }),
-            );
+      setBlogs(normalizedBlogs);
+    } catch (error) {
+      console.log(
+        '❌ Blog Feed Error:',
+        error?.response?.data || error?.message || error,
+      );
 
-          setBlogs(
-            normalizedBlogs,
-          );
-        } catch (error) {
-          console.log(
-            '❌ Blog Feed Error:',
-            error?.response
-              ?.data ||
-            error?.message ||
-            error,
-          );
+      setBlogs([]);
 
-          setBlogs([]);
-
-          setError(
-            error?.response
-              ?.data?.message ||
-            'Unable to load blogs. Please try again.',
-          );
-        } finally {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      },
-      [],
-    );
+      setError(
+        error?.response?.data?.message ||
+          'Unable to load blogs. Please try again.',
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   /* ===================================================
      INITIAL LOAD
@@ -1001,32 +626,21 @@ const BlogFeedScreen = ({
   =================================================== */
 
   useFocusEffect(
-    useCallback(
-      () => {
-        if (
-          route?.params
-            ?.refreshKey
-        ) {
-          fetchBlogs();
-        }
-      },
-      [
-        fetchBlogs,
-        route?.params
-          ?.refreshKey,
-      ],
-    ),
+    useCallback(() => {
+      if (route?.params?.refreshKey) {
+        fetchBlogs();
+      }
+    }, [fetchBlogs, route?.params?.refreshKey]),
   );
 
   /* ===================================================
      REFRESH
   =================================================== */
 
-  const handleRefresh =
-    () => {
-      setRefreshing(true);
-      fetchBlogs();
-    };
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchBlogs();
+  };
 
   /* ===================================================
      LOADING
@@ -1034,35 +648,13 @@ const BlogFeedScreen = ({
 
   if (loading) {
     return (
-      <View
-        style={
-          styles.container
-        }
-      >
-        {!embedded && (
-          <AppHeader
-            isBlogHeader
-            backTarget="Dashboard"
-          />
-        )}
+      <View style={styles.container}>
+        {!embedded && <AppHeader isBlogHeader backTarget="Dashboard" />}
 
-        <View
-          style={
-            styles.centerContainer
-          }
-        >
-          <ActivityIndicator
-            size="large"
-            color="#00503D"
-          />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#00503D" />
 
-          <Text
-            style={
-              styles.loadingText
-            }
-          >
-            Loading blogs...
-          </Text>
+          <Text style={styles.loadingText}>Loading blogs...</Text>
         </View>
       </View>
     );
@@ -1074,61 +666,17 @@ const BlogFeedScreen = ({
 
   if (error) {
     return (
-      <View
-        style={
-          styles.container
-        }
-      >
-        {!embedded && (
-          <AppHeader
-            isBlogHeader
-            backTarget="Dashboard"
-          />
-        )}
-        <View
-          style={
-            styles.centerContainer
-          }
-        >
-          <Text
-            style={
-              styles.errorIcon
-            }
-          >
-            ⚠️
-          </Text>
+      <View style={styles.container}>
+        {!embedded && <AppHeader isBlogHeader backTarget="Dashboard" />}
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
 
-          <Text
-            style={
-              styles.errorTitle
-            }
-          >
-            Unable to load blogs
-          </Text>
+          <Text style={styles.errorTitle}>Unable to load blogs</Text>
 
-          <Text
-            style={
-              styles.errorMessage
-            }
-          >
-            {error}
-          </Text>
+          <Text style={styles.errorMessage}>{error}</Text>
 
-          <TouchableOpacity
-            style={
-              styles.retryButton
-            }
-            onPress={
-              fetchBlogs
-            }
-          >
-            <Text
-              style={
-                styles.retryText
-              }
-            >
-              Try Again
-            </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchBlogs}>
+            <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1140,56 +688,28 @@ const BlogFeedScreen = ({
   =================================================== */
 
   return (
-    <View
-      style={
-        styles.container
-      }
-    >
-      {!embedded && (
-        <AppHeader
-          isBlogHeader
-          backTarget="Dashboard"
-        />
-      )}
+    <View style={styles.container}>
+      {!embedded && <AppHeader isBlogHeader backTarget="Dashboard" />}
 
       <ScrollView
-        showsVerticalScrollIndicator={
-          false
-        }
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={
-              refreshing
-            }
-            onRefresh={
-              handleRefresh
-            }
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
             tintColor="#00503D"
           />
         }
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={styles.content}
       >
         {/* ===========================================
             HEADER
         =========================================== */}
 
-        <Text
-          style={
-            styles.heading
-          }
-        >
-          Latest Blogs
-        </Text>
+        <Text style={styles.heading}>Latest Blogs</Text>
 
-        <Text
-          style={
-            styles.subHeading
-          }
-        >
-          Discover what's happening
-          in Manas
+        <Text style={styles.subHeading}>
+          Discover what's happening in Manas
         </Text>
 
         {/* ===========================================
@@ -1197,34 +717,13 @@ const BlogFeedScreen = ({
         =========================================== */}
 
         {blogs.length === 0 ? (
-          <View
-            style={
-              styles.emptyContainer
-            }
-          >
-            <Text
-              style={
-                styles.emptyIcon
-              }
-            >
-              📝
-            </Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📝</Text>
 
-            <Text
-              style={
-                styles.emptyTitle
-              }
-            >
-              No blogs yet
-            </Text>
+            <Text style={styles.emptyTitle}>No blogs yet</Text>
 
-            <Text
-              style={
-                styles.emptyMessage
-              }
-            >
-              There are no published
-              blogs available.
+            <Text style={styles.emptyMessage}>
+              There are no published blogs available.
             </Text>
           </View>
         ) : (
@@ -1232,31 +731,15 @@ const BlogFeedScreen = ({
              BLOG LIST
           ========================================= */
 
-          blogs.map(
-            (
-              blog,
-              index,
-            ) => (
-              <BlogCard
-                key={
-                  getBlogId(
-                    blog,
-                  ) ||
-                  `blog-${index}`
-                }
-                blog={blog}
-                onPress={
-                  handleOpenBlog
-                }
-                onLikePress={
-                  handleLikePress
-                }
-                onCommentPress={
-                  openCommentModal
-                }
-              />
-            ),
-          )
+          blogs.map((blog, index) => (
+            <BlogCard
+              key={getBlogId(blog) || `blog-${index}`}
+              blog={blog}
+              onPress={handleOpenBlog}
+              onLikePress={handleLikePress}
+              onCommentPress={openCommentModal}
+            />
+          ))
         )}
       </ScrollView>
 
@@ -1267,17 +750,9 @@ const BlogFeedScreen = ({
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.85}
-        onPress={
-          handleCreateBlog
-        }
+        onPress={handleCreateBlog}
       >
-        <Text
-          style={
-            styles.fabText
-          }
-        >
-          +
-        </Text>
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
       {/* =============================================
@@ -1285,181 +760,79 @@ const BlogFeedScreen = ({
       ============================================= */}
 
       <Modal
-        visible={
-          commentModalVisible
-        }
+        visible={commentModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={
-          closeCommentModal
-        }
+        onRequestClose={closeCommentModal}
       >
         {/* OUTSIDE AREA */}
 
-        <Pressable
-          style={
-            styles.modalContainer
-          }
-          onPress={
-            closeCommentModal
-          }
-        >
+        <Pressable style={styles.modalContainer} onPress={closeCommentModal}>
           {/* COMMENT SHEET */}
 
           <Pressable
-            style={
-              styles.commentModal
-            }
-            onPress={event =>
-              event.stopPropagation()
-            }
+            style={styles.commentModal}
+            onPress={event => event.stopPropagation()}
           >
             <KeyboardAvoidingView
-              behavior={
-                Platform.OS ===
-                  'ios'
-                  ? 'padding'
-                  : undefined
-              }
-              style={
-                styles.commentSheetInner
-              }
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.commentSheetInner}
             >
               {/* HEADER */}
 
-              <View
-                style={
-                  styles.commentHeader
-                }
-              >
-                <Text
-                  style={
-                    styles.commentTitle
-                  }
-                >
-                  Comments
-                </Text>
+              <View style={styles.commentHeader}>
+                <Text style={styles.commentTitle}>Comments</Text>
 
-                <TouchableOpacity
-                  onPress={
-                    closeCommentModal
-                  }
-                >
-                  <Text
-                    style={
-                      styles.closeText
-                    }
-                  >
-                    ✕
-                  </Text>
+                <TouchableOpacity onPress={closeCommentModal}>
+                  <Text style={styles.closeText}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               {/* COMMENTS */}
 
               {commentsLoading ? (
-                <View
-                  style={
-                    styles.commentsLoadingContainer
-                  }
-                >
-                  <ActivityIndicator
-                    size="small"
-                    color="#00503D"
-                  />
+                <View style={styles.commentsLoadingContainer}>
+                  <ActivityIndicator size="small" color="#00503D" />
 
-                  <Text
-                    style={
-                      styles.commentsLoadingText
-                    }
-                  >
+                  <Text style={styles.commentsLoadingText}>
                     Loading comments...
                   </Text>
                 </View>
               ) : (
                 <FlatList
-                  data={
-                    comments
+                  data={comments}
+                  keyExtractor={(item, index) =>
+                    item?._id || `comment-${index}`
                   }
-                  keyExtractor={(
-                    item,
-                    index,
-                  ) =>
-                    item?._id ||
-                    `comment-${index}`
-                  }
-                  style={
-                    styles.commentsListContainer
-                  }
+                  style={styles.commentsListContainer}
                   contentContainerStyle={
-                    comments.length ===
-                      0
+                    comments.length === 0
                       ? styles.emptyCommentsList
                       : styles.commentsListContent
                   }
-                  showsVerticalScrollIndicator={
-                    false
-                  }
+                  showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                   ListEmptyComponent={
-                    <View
-                      style={
-                        styles.emptyCommentsBox
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.emptyCommentsIcon
-                        }
-                      >
-                        💬
-                      </Text>
+                    <View style={styles.emptyCommentsBox}>
+                      <Text style={styles.emptyCommentsIcon}>💬</Text>
 
-                      <Text
-                        style={
-                          styles.emptyCommentsTitle
-                        }
-                      >
+                      <Text style={styles.emptyCommentsTitle}>
                         No comments yet
                       </Text>
 
-                      <Text
-                        style={
-                          styles.emptyCommentsText
-                        }
-                      >
-                        Be the first to
-                        comment on this
-                        blog.
+                      <Text style={styles.emptyCommentsText}>
+                        Be the first to comment on this blog.
                       </Text>
                     </View>
                   }
-                  renderItem={({
-                    item,
-                  }) => (
-                    <View
-                      style={
-                        styles.commentBubble
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.commentAuthor
-                        }
-                      >
-                        {getCommentAuthorName(
-                          item,
-                        )}
+                  renderItem={({ item }) => (
+                    <View style={styles.commentBubble}>
+                      <Text style={styles.commentAuthor}>
+                        {getCommentAuthorName(item)}
                       </Text>
 
-                      <Text
-                        style={
-                          styles.commentContent
-                        }
-                      >
-                        {item?.content ||
-                          item?.comment ||
-                          'No comment text'}
+                      <Text style={styles.commentContent}>
+                        {item?.content || item?.comment || 'No comment text'}
                       </Text>
                     </View>
                   )}
@@ -1468,42 +841,22 @@ const BlogFeedScreen = ({
 
               {/* INPUT */}
 
-              <View
-                style={
-                  styles.commentInputWrap
-                }
-              >
+              <View style={styles.commentInputWrap}>
                 <TextInput
-                  style={
-                    styles.commentInput
-                  }
+                  style={styles.commentInput}
                   placeholder="Write your comment..."
                   placeholderTextColor="#999"
-                  value={
-                    commentText
-                  }
-                  onChangeText={
-                    setCommentText
-                  }
+                  value={commentText}
+                  onChangeText={setCommentText}
                   multiline
-                  maxLength={
-                    2000
-                  }
+                  maxLength={2000}
                   textAlignVertical="top"
                   returnKeyType="default"
-                  blurOnSubmit={
-                    false
-                  }
+                  blurOnSubmit={false}
                 />
 
-                <Text
-                  style={
-                    styles.characterCount
-                  }
-                >
-                  {
-                    commentText.length
-                  }
+                <Text style={styles.characterCount}>
+                  {commentText.length}
                   /2000
                 </Text>
 
@@ -1511,30 +864,16 @@ const BlogFeedScreen = ({
                   style={[
                     styles.commentSubmitButton,
 
-                    (!commentText.trim() ||
-                      commentSubmitting) &&
-                    styles.commentSubmitButtonDisabled,
+                    (!commentText.trim() || commentSubmitting) &&
+                      styles.commentSubmitButtonDisabled,
                   ]}
-                  onPress={
-                    handleSubmitComment
-                  }
-                  disabled={
-                    !commentText.trim() ||
-                    commentSubmitting
-                  }
+                  onPress={handleSubmitComment}
+                  disabled={!commentText.trim() || commentSubmitting}
                 >
                   {commentSubmitting ? (
-                    <ActivityIndicator
-                      color="#FFFFFF"
-                    />
+                    <ActivityIndicator color="#FFFFFF" />
                   ) : (
-                    <Text
-                      style={
-                        styles.commentSubmitText
-                      }
-                    >
-                      Post Comment
-                    </Text>
+                    <Text style={styles.commentSubmitText}>Post Comment</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1549,19 +888,11 @@ const BlogFeedScreen = ({
 
       {popup.visible && (
         <Popup
-          title={
-            popup.title
-          }
-          message={
-            popup.message
-          }
-          onClose={
-            closePopup
-          }
+          title={popup.title}
+          message={popup.message}
+          onClose={closePopup}
           autoClose
-          autoCloseDelay={
-            2000
-          }
+          autoCloseDelay={2000}
         />
       )}
     </View>
@@ -1574,309 +905,298 @@ export default BlogFeedScreen;
    STYLES
 ===================================================== */
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        '#F7F9F8',
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F9F8',
+  },
+
+  content: {
+    padding: 16,
+    paddingBottom: 110,
+  },
+
+  /* HEADER */
+
+  heading: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#00503D',
+    marginBottom: 4,
+  },
+
+  subHeading: {
+    fontSize: 14,
+    color: '#7A898E',
+    marginBottom: 18,
+  },
+
+  /* CENTER */
+
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#66777D',
+  },
+
+  /* ERROR */
+
+  errorIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#173A4A',
+  },
+
+  errorMessage: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#7A898E',
+  },
+
+  retryButton: {
+    marginTop: 18,
+    paddingHorizontal: 24,
+    paddingVertical: 11,
+    borderRadius: 8,
+    backgroundColor: '#00503D',
+  },
+
+  retryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  /* EMPTY */
+
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+
+  emptyIcon: {
+    fontSize: 42,
+    marginBottom: 12,
+  },
+
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#173A4A',
+  },
+
+  emptyMessage: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#7A898E',
+    textAlign: 'center',
+  },
+
+  /* FAB */
+
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#81BAA5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
     },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
 
-    content: {
-      padding: 16,
-      paddingBottom: 110,
-    },
+  fabText: {
+    fontSize: 30,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
 
-    /* HEADER */
+  /* COMMENT MODAL */
 
-    heading: {
-      fontSize: 24,
-      fontWeight: '800',
-      color: '#00503D',
-      marginBottom: 4,
-    },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
 
-    subHeading: {
-      fontSize: 14,
-      color: '#7A898E',
-      marginBottom: 18,
-    },
+  commentSheetInner: {
+    width: '100%',
+    maxHeight: '100%',
+  },
 
-    /* CENTER */
+  commentModal: {
+    backgroundColor: '#FFFFFF',
 
-    centerContainer: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 30,
-    },
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
 
-    loadingText: {
-      marginTop: 10,
-      fontSize: 14,
-      color: '#66777D',
-    },
+    padding: 20,
 
-    /* ERROR */
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
 
-    errorIcon: {
-      fontSize: 40,
-      marginBottom: 12,
-    },
+    maxHeight: '85%',
+  },
 
-    errorTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#173A4A',
-    },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
 
-    errorMessage: {
-      marginTop: 8,
-      textAlign: 'center',
-      fontSize: 14,
-      color: '#7A898E',
-    },
+  commentTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#173A4A',
+  },
 
-    retryButton: {
-      marginTop: 18,
-      paddingHorizontal: 24,
-      paddingVertical: 11,
-      borderRadius: 8,
-      backgroundColor: '#00503D',
-    },
+  closeText: {
+    fontSize: 22,
+    color: '#666666',
+  },
 
-    retryText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '600',
-    },
+  commentsLoadingContainer: {
+    minHeight: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
 
-    /* EMPTY */
+  commentsLoadingText: {
+    marginTop: 10,
+    color: '#66777D',
+    fontSize: 13,
+  },
 
-    emptyContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 80,
-    },
+  commentsListContainer: {
+    maxHeight: 320,
+    marginBottom: 12,
+  },
 
-    emptyIcon: {
-      fontSize: 42,
-      marginBottom: 12,
-    },
+  commentsListContent: {
+    paddingBottom: 8,
+  },
 
-    emptyTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#173A4A',
-    },
+  emptyCommentsList: {
+    minHeight: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 22,
+  },
 
-    emptyMessage: {
-      marginTop: 8,
-      fontSize: 14,
-      color: '#7A898E',
-      textAlign: 'center',
-    },
+  emptyCommentsBox: {
+    alignItems: 'center',
+  },
 
-    /* FAB */
+  emptyCommentsIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
 
-    fab: {
-      position: 'absolute',
-      right: 20,
-      bottom: 25,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: '#81BAA5',
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 5,
+  emptyCommentsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#173A4A',
+    marginBottom: 4,
+  },
 
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
-    },
+  emptyCommentsText: {
+    fontSize: 13,
+    color: '#6A7A7A',
+    textAlign: 'center',
+  },
 
-    fabText: {
-      fontSize: 30,
-      color: '#FFFFFF',
-      fontWeight: '700',
-    },
+  commentBubble: {
+    backgroundColor: '#F3F7F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
 
-    /* COMMENT MODAL */
+  commentAuthor: {
+    color: '#00503D',
+    fontWeight: '700',
+    fontSize: 12,
+    marginBottom: 4,
+  },
 
-    modalContainer: {
-      flex: 1,
-      justifyContent: 'flex-end',
-      backgroundColor:
-        'rgba(0,0,0,0.45)',
-    },
+  commentContent: {
+    color: '#1A1A1A',
+    fontSize: 14,
+    lineHeight: 20,
+  },
 
-    commentSheetInner: {
-      width: '100%',
-      maxHeight: '100%',
-    },
+  commentInputWrap: {
+    marginTop: 4,
+  },
 
-    commentModal: {
-      backgroundColor:
-        '#FFFFFF',
+  commentInput: {
+    minHeight: 100,
+    maxHeight: 180,
 
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
 
-      padding: 20,
+    borderRadius: 10,
 
-      paddingBottom:
-        Platform.OS === 'ios'
-          ? 30
-          : 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
 
-      maxHeight: '85%',
-    },
+    fontSize: 16,
+    color: '#222222',
+  },
 
-    commentHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent:
-        'space-between',
-      marginBottom: 15,
-    },
+  characterCount: {
+    textAlign: 'right',
+    marginTop: 6,
+    color: '#888888',
+    fontSize: 12,
+  },
 
-    commentTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#173A4A',
-    },
+  commentSubmitButton: {
+    marginTop: 15,
 
-    closeText: {
-      fontSize: 22,
-      color: '#666666',
-    },
+    backgroundColor: '#00503D',
 
-    commentsLoadingContainer: {
-      minHeight: 120,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 20,
-    },
+    borderRadius: 10,
 
-    commentsLoadingText: {
-      marginTop: 10,
-      color: '#66777D',
-      fontSize: 13,
-    },
+    paddingVertical: 14,
 
-    commentsListContainer: {
-      maxHeight: 320,
-      marginBottom: 12,
-    },
+    alignItems: 'center',
+  },
 
-    commentsListContent: {
-      paddingBottom: 8,
-    },
+  commentSubmitButtonDisabled: {
+    backgroundColor: '#B8C8C3',
+  },
 
-    emptyCommentsList: {
-      minHeight: 120,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 22,
-    },
-
-    emptyCommentsBox: {
-      alignItems: 'center',
-    },
-
-    emptyCommentsIcon: {
-      fontSize: 32,
-      marginBottom: 8,
-    },
-
-    emptyCommentsTitle: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: '#173A4A',
-      marginBottom: 4,
-    },
-
-    emptyCommentsText: {
-      fontSize: 13,
-      color: '#6A7A7A',
-      textAlign: 'center',
-    },
-
-    commentBubble: {
-      backgroundColor:
-        '#F3F7F6',
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginBottom: 10,
-    },
-
-    commentAuthor: {
-      color: '#00503D',
-      fontWeight: '700',
-      fontSize: 12,
-      marginBottom: 4,
-    },
-
-    commentContent: {
-      color: '#1A1A1A',
-      fontSize: 14,
-      lineHeight: 20,
-    },
-
-    commentInputWrap: {
-      marginTop: 4,
-    },
-
-    commentInput: {
-      minHeight: 100,
-      maxHeight: 180,
-
-      borderWidth: 1,
-      borderColor: '#DDDDDD',
-
-      borderRadius: 10,
-
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-
-      fontSize: 16,
-      color: '#222222',
-    },
-
-    characterCount: {
-      textAlign: 'right',
-      marginTop: 6,
-      color: '#888888',
-      fontSize: 12,
-    },
-
-    commentSubmitButton: {
-      marginTop: 15,
-
-      backgroundColor:
-        '#00503D',
-
-      borderRadius: 10,
-
-      paddingVertical: 14,
-
-      alignItems: 'center',
-    },
-
-    commentSubmitButtonDisabled: {
-      backgroundColor:
-        '#B8C8C3',
-    },
-
-    commentSubmitText: {
-      color: '#FFFFFF',
-      fontSize: 15,
-      fontWeight: '700',
-    },
-  });
+  commentSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+});

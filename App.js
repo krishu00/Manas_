@@ -7,17 +7,23 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import {
+  getAccountType,
+  clearGuestAccount,
+  clearEmployeeAccount,
+} from './src/utils/storage';
 import Dashboard from './components/Dashboard';
 import LoginScreen from './components/Login/LoginScreen';
 import FirstTimeLogin from './components/Login/FirstTimeLogin';
+import GuestLoginScreen from './components/Login/GuestLoginScreen';
 import Popup from './components/Popup/Popup';
-import BlogFeedScreen from './components/Screens/Blog/BlogFeedScreen';
-import CreateBlogScreen from './components/Screens/Blog/CreateBlogScreen';
-import BlogDetailScreen from './components/Screens/Blog/BlogDetailScreen';
+import PublicNavigator from './components/PublicNavigator';
 
 // 👇 TEMPORARILY DISABLED FIREBASE IMPORTS 👇
-import { requestUserPermission, getFCMToken } from './components/FCMService/FCMService';
+import {
+  requestUserPermission,
+  getFCMToken,
+} from './components/FCMService/FCMService';
 import { initFCMListeners } from './src/utils/NotificationService';
 import { navigationRef } from './src/utils/NavigationService';
 
@@ -31,6 +37,7 @@ const AppMain = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [accountType, setAccountType] = useState(null);
 
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupTitle, setPopupTitle] = useState('');
@@ -46,25 +53,132 @@ const AppMain = () => {
   }, []);
 
   // ======= Authentication check =======
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     try {
+  //       const token = await AsyncStorage.getItem('userToken');
+  //       const loginTime = await AsyncStorage.getItem('loginTime');
+
+  //       if (token && loginTime) {
+  //         const now = Date.now();
+  //         const diff = now - parseInt(loginTime, 10);
+
+  //         if (diff > LOGOUT_MILLISECONDS) {
+  //           await handleLogout();
+  //           showPopup(
+  //             'Session expired',
+  //             'You have been logged out due to inactivity.',
+  //           );
+  //         } else {
+  //           setIsAuthenticated(true);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('Error checking auth status:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   checkAuth();
+  // }, [showPopup]);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = await AsyncStorage.getItem('userToken');
-        const loginTime = await AsyncStorage.getItem('loginTime');
+        const storedAccountType = await getAccountType();
 
-        if (token && loginTime) {
+        const employeeToken = await AsyncStorage.getItem('userToken');
+        const employeeLoginTime = await AsyncStorage.getItem('loginTime');
+
+        const guestToken = await AsyncStorage.getItem('guestToken');
+        const guestLoginTime = await AsyncStorage.getItem('guestLoginTime');
+
+        console.log('========== SESSION RESTORE ==========');
+        console.log('Stored accountType:', storedAccountType);
+        console.log('Employee token exists:', !!employeeToken);
+        console.log('Employee loginTime:', employeeLoginTime);
+        console.log('Guest token exists:', !!guestToken);
+        console.log('Guest loginTime:', guestLoginTime);
+        console.log('=====================================');
+
+        // =================================================
+        // EMPLOYEE SESSION
+        // =================================================
+
+        if (
+          (storedAccountType === 'employee' || !storedAccountType) &&
+          employeeToken &&
+          employeeLoginTime
+        ) {
           const now = Date.now();
-          const diff = now - parseInt(loginTime, 10);
+          const diff = now - parseInt(employeeLoginTime, 10);
 
           if (diff > LOGOUT_MILLISECONDS) {
-            await handleLogout();
-            showPopup('Session expired', 'You have been logged out due to inactivity.');
+            console.log('Employee session expired');
+
+            await clearEmployeeAccount();
+
+            setAccountType(null);
+            setIsAuthenticated(false);
+
+            showPopup(
+              'Session expired',
+              'You have been logged out due to inactivity.',
+            );
           } else {
+            console.log('Restoring Employee session');
+
+            setAccountType('employee');
             setIsAuthenticated(true);
           }
+
+          return;
         }
+
+        // =================================================
+        // GUEST SESSION
+        // =================================================
+
+        if (storedAccountType === 'guest' && guestToken && guestLoginTime) {
+          console.log('Restoring Guest session');
+
+          setAccountType('guest');
+          setIsAuthenticated(true);
+
+          return;
+        }
+
+        // =================================================
+        // BACKWARD COMPATIBILITY
+        //
+        // Existing users may have userToken but no
+        // accountType because they were logged in before
+        // this new architecture was introduced.
+        // =================================================
+
+        if (employeeToken && employeeLoginTime) {
+          console.log('Existing Employee session detected without accountType');
+
+          setAccountType('employee');
+          setIsAuthenticated(true);
+
+          return;
+        }
+
+        // =================================================
+        // NO SESSION
+        // =================================================
+
+        console.log('No authenticated session found');
+
+        setAccountType(null);
+        setIsAuthenticated(false);
       } catch (error) {
         console.error('Error checking auth status:', error);
+
+        setAccountType(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -72,8 +186,6 @@ const AppMain = () => {
 
     checkAuth();
   }, [showPopup]);
-
-
 
   // 👇 TEMPORARILY DISABLED FIREBASE FCM SETUP 👇
   // useEffect(() => {
@@ -99,7 +211,6 @@ const AppMain = () => {
 
   //   console.log("Firebase is temporarily disabled. Skipping FCM setup.");
   // }, []);
-
 
   useEffect(() => {
     let unsubscribe;
@@ -151,77 +262,124 @@ const AppMain = () => {
 
       if (remaining <= 0) {
         await handleLogout();
-        showPopup('Session expired', 'You have been logged out due to inactivity.');
+        showPopup(
+          'Session expired',
+          'You have been logged out due to inactivity.',
+        );
       } else {
         timeout = setTimeout(async () => {
           await handleLogout();
-          showPopup('Session expired', 'You have been logged out due to inactivity.');
+          showPopup(
+            'Session expired',
+            'You have been logged out due to inactivity.',
+          );
         }, remaining);
       }
     };
 
-    if (isAuthenticated) setupAutoLogout();
+    // if (isAuthenticated) setupAutoLogout();
+    if (isAuthenticated && accountType === 'employee') {
+      setupAutoLogout();
+    }
     return () => timeout && clearTimeout(timeout);
-  }, [isAuthenticated, showPopup]);
+  }, [isAuthenticated, showPopup, accountType]);
 
   // ======= Login & Logout handlers =======
+  // const handleLoginSuccess = async token => {
+  //   setLoginLoading(true);
+
+  //   try {
+  //     const now = Date.now();
+
+  //     await AsyncStorage.setItem('userToken', token);
+  //     await AsyncStorage.setItem('loginTime', now.toString());
+
+  //     setIsAuthenticated(true);
+
+  //     navigationRef.current?.reset({
+  //       index: 0,
+  //       routes: [{ name: 'Dashboard' }],
+  //     });
+  //   } catch (error) {
+  //     console.error('Error saving token:', error);
+  //   } finally {
+  //     setLoginLoading(false);
+  //   }
+  // };
   const handleLoginSuccess = async token => {
     setLoginLoading(true);
 
     try {
       const now = Date.now();
 
+      // ============================================
+      // Clear any previous Guest session
+      // ============================================
+
+      await clearGuestAccount();
+
+      // ============================================
+      // Existing Employee session
+      // ============================================
+
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('loginTime', now.toString());
 
+      // ============================================
+      // Mark active account as Employee
+      // ============================================
+
+      await AsyncStorage.setItem('accountType', 'employee');
+
+      setAccountType('employee');
       setIsAuthenticated(true);
 
       navigationRef.current?.reset({
         index: 0,
         routes: [{ name: 'Dashboard' }],
       });
-
     } catch (error) {
-      console.error('Error saving token:', error);
+      console.error('Error saving Employee session:', error);
     } finally {
       setLoginLoading(false);
     }
   };
 
   const handleLogout = async () => {
-  try {
-    console.log('========== APP LOGOUT ==========');
+    try {
+      console.log('========== APP LOGOUT ==========');
 
-    await AsyncStorage.multiRemove([
-      'userToken',
-      'employee_id',
-      'employee_name',
-      'company_Code',
-      'loginTime',
-    ]);
+      // await AsyncStorage.multiRemove([
+      //   'userToken',
+      //   'employee_id',
+      //   'employee_name',
+      //   'company_Code',
+      //   'loginTime',
+      // ]);
+      await clearEmployeeAccount();
+      setAccountType(null);
 
-    setIsAuthenticated(false);
+      setIsAuthenticated(false);
 
-    console.log('Auth state cleared');
-    console.log('Navigation ready:', navigationRef.current?.isReady());
+      console.log('Auth state cleared');
+      console.log('Navigation ready:', navigationRef.current?.isReady());
 
-    if (navigationRef.current?.isReady()) {
-      navigationRef.current.reset({
-        index: 0,
-        routes: [{ name: 'BlogFeed' }],
-      });
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'PublicNavigator' }],
+        });
 
-      console.log('Navigated to BlogFeed');
-    } else {
-      console.log('Navigation is not ready');
+        console.log('Navigated to PublicNavigator');
+      } else {
+        console.log('Navigation is not ready');
+      }
+
+      console.log('================================');
+    } catch (error) {
+      console.error('Error during logout:', error);
     }
-
-    console.log('================================');
-
-  } catch (error) {
-    console.error('Error during logout:', error);
-  }
-};
+  };
 
   // ======= Render Loading =======
   const renderLoading = (color = '#0000ff') => (
@@ -236,21 +394,32 @@ const AppMain = () => {
   return (
     <>
       <NavigationContainer ref={navigationRef}>
+        {/* <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName={isAuthenticated ? 'Dashboard' : 'PublicNavigator'}
+        > */}
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
-          initialRouteName={isAuthenticated ? 'Dashboard' : 'BlogFeed'}
+          initialRouteName={
+            isAuthenticated && accountType === 'employee'
+              ? 'Dashboard'
+              : 'PublicNavigator'
+          }
         >
-          <Stack.Screen name="BlogFeed" component={BlogFeedScreen} />
-          <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
+          <Stack.Screen name="PublicNavigator" component={PublicNavigator} />
 
           <Stack.Screen name="Login">
             {props => (
-              <LoginScreen {...props} fcmToken={fcmToken} onLoginSuccess={handleLoginSuccess} />
+              <LoginScreen
+                {...props}
+                fcmToken={fcmToken}
+                onLoginSuccess={handleLoginSuccess}
+              />
             )}
           </Stack.Screen>
+          <Stack.Screen name="GuestLogin" component={GuestLoginScreen} />
 
           <Stack.Screen name="FirstTimeLogin" component={FirstTimeLogin} />
-          <Stack.Screen name="CreateBlog" component={CreateBlogScreen} />
 
           <Stack.Screen name="Dashboard">
             {props => <Dashboard {...props} onLogoutSuccess={handleLogout} />}
@@ -270,8 +439,3 @@ const AppMain = () => {
 
 // 💡 EXPORT APPMAIN DIRECTLY AS THE DEFAULT EXPORT SO INDEX.JS CAN WEAVE IT IN CLEANLY
 export default AppMain;
-
-
-
-
-

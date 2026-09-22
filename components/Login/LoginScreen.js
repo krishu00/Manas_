@@ -16,6 +16,7 @@ import Popup from '../Popup/Popup';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearGuestAccount } from '../../src/utils/storage';
 
 const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
   const [email, setEmail] = useState('');
@@ -81,14 +82,14 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
   const handleLogin = async () => {
     const abortController = new AbortController();
     setController(abortController);
-    console.log("apiMiddleware", apiMiddleware)
+    console.log('apiMiddleware', apiMiddleware);
     try {
       const response = await apiMiddleware.post(
         '/login',
         {
           email: email.trim(),
           password: password.trim(),
-          platform:  Platform.OS,
+          platform: Platform.OS,
           fcmToken: fcmToken,
         },
         {
@@ -97,18 +98,188 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
         },
       );
 
+      // if (response?.data?.success) {
+      //   const { employee, firstTimeLogin } = response.data;
+      //   const { token } = employee;
+      //   if (firstTimeLogin) {
+      //     navigation.replace('FirstTimeLogin');
+      //     return;
+      //   }
+      //   console.log('response?.data login  ', response?.data);
+      //   console.log('response?.data.employee  ', response?.data.employee);
+      //   if (employee && employee.employee_id && employee.company_code) {
+      //     await AsyncStorage.setItem('employee_id', employee.employee_id);
+
+      //     await AsyncStorage.setItem(
+      //       'company_Code',
+      //       employee.company_code.toString(),
+      //     );
+
+      //     // Store employee name from login response
+      //     await AsyncStorage.setItem('employee_name', employee.emp_name || '');
+
+      //     await AsyncStorage.setItem('loginTime', Date.now().toString());
+
+      //     if (fcmToken) {
+      //       await AsyncStorage.setItem('fcmToken', fcmToken);
+      //     }
+
+      //     if (token) {
+      //       await AsyncStorage.setItem('userToken', token);
+      //     }
+
+      //     // ✅ Save credentials securely if Remember Me checked
+      //     if (rememberMe) {
+      //       // Save this account in Keychain with unique service name
+      //       await Keychain.setGenericPassword(email.trim(), password.trim(), {
+      //         service: `app-${email.trim()}`,
+      //       });
+
+      //       let savedEmails = JSON.parse(
+      //         (await AsyncStorage.getItem('savedAccounts')) || '[]',
+      //       );
+
+      //       if (!savedEmails.includes(email.trim())) {
+      //         savedEmails.push(email.trim());
+
+      //         await AsyncStorage.setItem(
+      //           'savedAccounts',
+      //           JSON.stringify(savedEmails),
+      //         );
+      //       }
+      //     }
+      //     console.log('ASYNC CHECK', await AsyncStorage.getItem('employee_id'));
+
+      //     console.log(
+      //       'ASYNC CHECK',
+      //       await AsyncStorage.getItem('company_Code'),
+      //     );
+      //     onLoginSuccess(token);
+
+      //     console.log('========== LOGIN STORAGE CHECK ==========');
+
+      //     console.log('userToken:', await AsyncStorage.getItem('userToken'));
+
+      //     console.log(
+      //       'employee_id:',
+      //       await AsyncStorage.getItem('employee_id'),
+      //     );
+
+      //     console.log(
+      //       'company_Code:',
+      //       await AsyncStorage.getItem('company_Code'),
+      //     );
+
+      //     console.log('loginTime:', await AsyncStorage.getItem('loginTime'));
+
+      //     console.log(
+      //       '=employee_name=========================================',
+      //       await AsyncStorage.getItem('employee_name'),
+      //     );
+      //   } else {
+      //     showPopup('Login Failed', 'Employee data missing in response.');
+      //   }
+      // } else {
+      //   showPopup(
+      //     'Login Failed',
+      //     response?.data?.message || 'Invalid credentials. Please try again.',
+      //   );
+      // }
+
       if (response?.data?.success) {
+        console.log('response?.data login:', response?.data);
+
+        // =====================================================
+        // GUEST LOGIN
+        // =====================================================
+
+        if (response?.data?.accountType === 'guest') {
+          const { guest, token } = response.data;
+
+          console.log('========== GUEST LOGIN ==========');
+          console.log('Guest:', guest);
+          console.log('Guest token exists:', !!token);
+
+          if (!guest || !token) {
+            showPopup(
+              'Login Failed',
+              'Guest login response is missing required data.',
+            );
+            return;
+          }
+
+          // Clear any existing Employee session
+          await AsyncStorage.multiRemove([
+            'userToken',
+            'employee_id',
+            'employee_name',
+            'company_Code',
+            'loginTime',
+            'employeeProfile',
+          ]);
+
+          // Store Guest session
+          await AsyncStorage.setItem('guestToken', token);
+          await AsyncStorage.setItem('guestLoginTime', Date.now().toString());
+          await AsyncStorage.setItem('guest_name', guest.name || '');
+          await AsyncStorage.setItem('guest_email', guest.email || '');
+          await AsyncStorage.setItem('accountType', 'guest');
+
+          console.log('========== GUEST STORAGE CHECK ==========');
+          console.log(
+            'accountType:',
+            await AsyncStorage.getItem('accountType'),
+          );
+          console.log('guestToken:', await AsyncStorage.getItem('guestToken'));
+          console.log(
+            'guestLoginTime:',
+            await AsyncStorage.getItem('guestLoginTime'),
+          );
+          console.log('guest_name:', await AsyncStorage.getItem('guest_name'));
+          console.log(
+            'guest_email:',
+            await AsyncStorage.getItem('guest_email'),
+          );
+          console.log(
+            'employee userToken:',
+            await AsyncStorage.getItem('userToken'),
+          );
+          console.log('==========================================');
+
+          // Guest should stay inside PublicNavigator
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'PublicNavigator' }],
+          });
+
+          return;
+        }
+
+        // =====================================================
+        // EMPLOYEE LOGIN
+        // =====================================================
+
         const { employee, firstTimeLogin } = response.data;
+
+        if (!employee) {
+          showPopup('Login Failed', 'Employee data missing in response.');
+          return;
+        }
+
         const { token } = employee;
+
         if (firstTimeLogin) {
           navigation.replace('FirstTimeLogin');
           return;
         }
-        console.log('response?.data login  ', response?.data);
-        console.log('response?.data.employee  ', response?.data.employee
 
-        );
+        console.log('response?.data.employee:', response?.data?.employee);
+
         if (employee && employee.employee_id && employee.company_code) {
+          // Clear any existing Guest session
+          await clearGuestAccount();
+
+          // Existing Employee storage
           await AsyncStorage.setItem('employee_id', employee.employee_id);
 
           await AsyncStorage.setItem(
@@ -116,14 +287,12 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
             employee.company_code.toString(),
           );
 
-          // Store employee name from login response
-          await AsyncStorage.setItem(
-            'employee_name',
-            employee.emp_name || '',
-          );
-
+          await AsyncStorage.setItem('employee_name', employee.emp_name || '');
 
           await AsyncStorage.setItem('loginTime', Date.now().toString());
+
+          // New account discriminator
+          await AsyncStorage.setItem('accountType', 'employee');
 
           if (fcmToken) {
             await AsyncStorage.setItem('fcmToken', fcmToken);
@@ -133,9 +302,12 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
             await AsyncStorage.setItem('userToken', token);
           }
 
-          // ✅ Save credentials securely if Remember Me checked
+          // ===================================================
+          // Remember Me
+          // Existing logic preserved
+          // ===================================================
+
           if (rememberMe) {
-            // Save this account in Keychain with unique service name
             await Keychain.setGenericPassword(email.trim(), password.trim(), {
               service: `app-${email.trim()}`,
             });
@@ -153,51 +325,44 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
               );
             }
           }
-          console.log('ASYNC CHECK', await AsyncStorage.getItem('employee_id'));
+
+          // ===================================================
+          // Employee storage verification
+          // ===================================================
+
+          console.log('========== EMPLOYEE STORAGE CHECK ==========');
 
           console.log(
-            'ASYNC CHECK',
-            await AsyncStorage.getItem('company_Code'),
-          );
-          onLoginSuccess(token);
-
-
-          console.log(
-            '========== LOGIN STORAGE CHECK =========='
+            'accountType:',
+            await AsyncStorage.getItem('accountType'),
           );
 
-          console.log(
-            'userToken:',
-            await AsyncStorage.getItem('userToken')
-          );
+          console.log('userToken:', await AsyncStorage.getItem('userToken'));
 
           console.log(
             'employee_id:',
-            await AsyncStorage.getItem('employee_id')
+            await AsyncStorage.getItem('employee_id'),
           );
 
           console.log(
             'company_Code:',
-            await AsyncStorage.getItem('company_Code')
+            await AsyncStorage.getItem('company_Code'),
           );
 
           console.log(
-            'loginTime:',
-            await AsyncStorage.getItem('loginTime')
+            'employee_name:',
+            await AsyncStorage.getItem('employee_name'),
           );
 
-          console.log(
-            '=employee_name========================================='
-            , await AsyncStorage.getItem('employee_name')
-          );
+          console.log('loginTime:', await AsyncStorage.getItem('loginTime'));
+
+          console.log('=============================================');
+
+          // Existing Employee navigation
+          onLoginSuccess(token);
         } else {
           showPopup('Login Failed', 'Employee data missing in response.');
         }
-      } else {
-        showPopup(
-          'Login Failed',
-          response?.data?.message || 'Invalid credentials. Please try again.',
-        );
       }
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -207,7 +372,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
         showPopup(
           'Error',
           error.response?.data?.message ||
-          'An error occurred during login. Please try again.',
+            'An error occurred during login. Please try again.',
         );
       }
     }
@@ -245,7 +410,7 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
       showPopup(
         'Error',
         error.response?.data?.message ||
-        'Something went wrong. Please try again.',
+          'Something went wrong. Please try again.',
       );
     }
   };
@@ -333,6 +498,17 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
           <Text style={styles.signInButtonText}>Login</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.guestLoginButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('GuestLogin')}
+        >
+          <Text style={styles.guestLoginText}>
+            Don't have an account?{' '}
+            <Text style={styles.guestLoginAction}>Sign in as Guest</Text>
+          </Text>
+        </TouchableOpacity>
+
         <Text style={styles.bottomText}>@powered by M2R Technomations</Text>
 
         {popupVisible && (
@@ -418,6 +594,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   signInButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  guestLoginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  guestLoginText: {
+    marginLeft: 6,
+    color: '#6b7471',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  guestLoginAction: {
+    color: '#4f766b',
+    textDecorationLine: 'underline',
+  },
   bottomText: { textAlign: 'center', marginTop: 'auto', color: '#AFAFB0' },
   rememberMeContainer: {
     flexDirection: 'row',

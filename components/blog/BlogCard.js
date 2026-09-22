@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 
 const DESCRIPTION_LIMIT = 120;
 
@@ -14,17 +8,10 @@ const truncate = (text = '', limit = DESCRIPTION_LIMIT) => {
     return '';
   }
 
-  return text.length > limit
-    ? `${text.slice(0, limit).trimEnd()}…`
-    : text;
+  return text.length > limit ? `${text.slice(0, limit).trimEnd()}…` : text;
 };
 
-const BlogCard = ({
-  blog,
-  onPress,
-  onLikePress,
-  onCommentPress,
-}) => {
+const BlogCard = ({ blog, onPress, onLikePress, onCommentPress }) => {
   /*
    * IMPORTANT:
    *
@@ -66,31 +53,26 @@ const BlogCard = ({
   };
 
   const authorName =
-    blog?.author?.name ||
-    blog?.authorName ||
-    'Manas User';
-
-  const title =
-    typeof blog?.title === 'string' &&
-    blog.title.trim()
+    blog?.authorType === 'guest'
+      ? blog?.guestAuthor?.name || 'Guest User'
+      : blog?.author?.employee_details?.name ||
+        blog?.author?.name ||
+        blog?.authorName ||
+        'Employee User';
+  
+        const title =
+    typeof blog?.title === 'string' && blog.title.trim()
       ? blog.title.trim()
       : 'Untitled Blog';
 
   const description =
-    typeof blog?.description === 'string'
-      ? blog.description.trim()
-      : '';
+    typeof blog?.description === 'string' ? blog.description.trim() : '';
 
-  const likesCount =
-    Number(blog?.likesCount ?? blog?.likeCount) || 0;
+  const likesCount = Number(blog?.likesCount ?? blog?.likeCount) || 0;
 
-  const commentsCount =
-    Number(blog?.commentsCount ?? blog?.commentCount) || 0;
+  const commentsCount = Number(blog?.commentsCount ?? blog?.commentCount) || 0;
 
-  const createdAt =
-    blog?.createdAt ||
-    blog?.createdOn ||
-    blog?.created_at;
+  const createdAt = blog?.createdAt || blog?.createdOn || blog?.created_at;
 
   const formattedDate = (() => {
     if (!createdAt) {
@@ -111,8 +93,7 @@ const BlogCard = ({
   })();
 
   const imageUri =
-    typeof blog?.image === 'string' &&
-    blog.image.trim()
+    typeof blog?.image === 'string' && blog.image.trim()
       ? blog.image.trim()
       : null;
 
@@ -122,10 +103,7 @@ const BlogCard = ({
       {/* BLOG CONTENT */}
       {/* ================================================= */}
 
-      <TouchableOpacity
-        activeOpacity={0.88}
-        onPress={handleCardPress}
-      >
+      <TouchableOpacity activeOpacity={0.88} onPress={handleCardPress}>
         {/* IMAGE */}
 
         {imageUri ? (
@@ -136,48 +114,33 @@ const BlogCard = ({
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Text style={styles.placeholderText}>
-              MANAS
-            </Text>
+            <Text style={styles.placeholderText}>MANAS</Text>
           </View>
         )}
 
         {/* CONTENT */}
 
         <View style={styles.body}>
-          <Text
-            style={styles.title}
-            numberOfLines={2}
-          >
+          <Text style={styles.title} numberOfLines={2}>
             {title}
           </Text>
 
           <View style={styles.authorRow}>
-            <Text
-              style={styles.author}
-              numberOfLines={1}
-            >
+            <Text style={styles.author} numberOfLines={1}>
               {authorName}
             </Text>
 
             {formattedDate ? (
               <>
-                <Text style={styles.dot}>
-                  •
-                </Text>
+                <Text style={styles.dot}>•</Text>
 
-                <Text style={styles.date}>
-                  {formattedDate}
-                </Text>
+                <Text style={styles.date}>{formattedDate}</Text>
               </>
             ) : null}
           </View>
 
           {description ? (
-            <Text
-              style={styles.description}
-              numberOfLines={4}
-            >
+            <Text style={styles.description} numberOfLines={4}>
               {truncate(description)}
             </Text>
           ) : null}
@@ -196,13 +159,9 @@ const BlogCard = ({
           activeOpacity={0.7}
           onPress={handleLike}
         >
-          <Text style={styles.likeIcon}>
-            {blog?.isLikedByMe ? '❤️' : '♡'}
-          </Text>
+          <Text style={styles.likeIcon}>{blog?.isLikedByMe ? '❤️' : '♡'}</Text>
 
-          <Text style={styles.actionText}>
-            {likesCount} Likes
-          </Text>
+          <Text style={styles.actionText}>{likesCount} Likes</Text>
         </TouchableOpacity>
 
         {/* COMMENT */}
@@ -212,13 +171,9 @@ const BlogCard = ({
           activeOpacity={0.7}
           onPress={handleComment}
         >
-          <Text style={styles.commentIcon}>
-            💬
-          </Text>
+          <Text style={styles.commentIcon}>💬</Text>
 
-          <Text style={styles.actionText}>
-            {commentsCount} Comments
-          </Text>
+          <Text style={styles.actionText}>{commentsCount} Comments</Text>
         </TouchableOpacity>
       </View>
     </View>

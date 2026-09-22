@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { COLORS, SPACING, FONT } from '../../src/utils/theme';
 
 export const LoadingState = ({ message = 'Loading...' }) => (
