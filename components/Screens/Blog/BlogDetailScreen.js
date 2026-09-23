@@ -112,10 +112,6 @@ const formatDate = isoDate => {
 
 const BlogDetailScreen = ({ route, navigation }) => {
   const blogId = route?.params?.blogId;
-
-  console.log('📖 BlogDetailScreen');
-  console.log('📖 Route params:', route?.params);
-  console.log('📖 Blog ID:', blogId);
   const openCommentsInitially = route?.params?.openComments === true;
 
   // ===================================================
@@ -197,7 +193,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
     try {
       const token = await getAuthToken();
 
-      console.log('🔐 Auth token exists:', !!token);
 
       return token;
     } catch (err) {
@@ -219,15 +214,8 @@ const BlogDetailScreen = ({ route, navigation }) => {
     }
 
     try {
-      console.log('================================');
-
-      console.log('📖 GET BLOG');
-
-      console.log('Blog ID:', blogId);
 
       const response = await getBlogById(blogId);
-
-      console.log('📖 Blog response:', response);
 
       const blogData = response?.data || response?.blog || response;
 
@@ -235,7 +223,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
         throw new Error('Blog data not found.');
       }
 
-      console.log('📖 Final blog data:', JSON.stringify(blogData, null, 2));
 
       setBlog(blogData);
 
@@ -277,11 +264,9 @@ const BlogDetailScreen = ({ route, navigation }) => {
     try {
       setCommentsLoading(true);
 
-      console.log('💬 Loading comments:', blogId);
 
       const response = await getBlogComments(blogId);
 
-      console.log('💬 RAW COMMENTS:', JSON.stringify(response?.data, null, 2));
 
       const commentList = Array.isArray(response?.data)
         ? response.data
@@ -289,10 +274,7 @@ const BlogDetailScreen = ({ route, navigation }) => {
         ? response
         : [];
 
-      console.log(
-        '💬 COMMENTS BEING STORED:',
-        JSON.stringify(commentList, null, 2),
-      );
+
 
       setComments(commentList);
     } catch (err) {
@@ -333,7 +315,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
   // ===================================================
 
   const openComments = async () => {
-    console.log('💬 Comment button pressed');
 
     const token = await checkAuth();
 
@@ -403,7 +384,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
       const currentlyLiked = isLiked;
 
-      console.log('❤️ Current like state:', currentlyLiked);
 
       let response;
 
@@ -412,7 +392,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
       // =============================================
 
       if (!currentlyLiked) {
-        console.log('❤️ Sending LIKE request');
 
         response = await likeBlog(blogId);
       }
@@ -421,12 +400,10 @@ const BlogDetailScreen = ({ route, navigation }) => {
       // UNLIKE
       // =============================================
       else {
-        console.log('💔 Sending UNLIKE request');
 
         response = await unlikeBlog(blogId);
       }
 
-      console.log('❤️ Like API response:', JSON.stringify(response, null, 2));
 
       /*
        * If backend explicitly says failure,
@@ -527,11 +504,9 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
       setCommentSubmitting(true);
 
-      console.log('💬 Adding comment:', cleanText);
 
       const response = await addBlogComment(blogId, cleanText);
 
-      console.log('💬 Add comment response:', response);
 
       if (response?.success === false) {
         showPopup(
@@ -559,7 +534,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
       await loadBlog();
 
-      console.log('✅ Comment added successfully');
     } catch (err) {
       console.error(
         '❌ Add comment error:',
@@ -607,7 +581,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
       const response = await deleteBlogComment(blogId, commentId);
 
-      console.log('🗑️ Delete comment response:', response);
 
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to delete comment.');
@@ -622,7 +595,6 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
       await loadBlog();
 
-      console.log('✅ Comment deleted');
     } catch (err) {
       console.error(
         '❌ Delete comment error:',

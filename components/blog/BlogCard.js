@@ -28,9 +28,6 @@ const BlogCard = ({ blog, onPress, onLikePress, onCommentPress }) => {
       return;
     }
 
-    console.log('📖 BlogCard pressed');
-    console.log('📖 BlogCard ID:', blog?._id || blog?.id);
-
     if (typeof onPress === 'function') {
       onPress(blog);
     }

@@ -10,13 +10,11 @@ const MoreScreen = () => {
   const [popupData, setPopupData] = useState({ title: '', message: '' });
 
   const sendTestNotification = async () => {
-    console.log('clicked');
     try {
       const loginToken = await AsyncStorage.getItem('employee_id');
       const fcmToken = await AsyncStorage.getItem('fcmToken');
 
-      console.log('fcm token', fcmToken);
-      console.log('loginToken from storage', loginToken);
+
 
       const res = await axios.post(
         'http://192.168.17.102:5050/api/notifications/send-user',

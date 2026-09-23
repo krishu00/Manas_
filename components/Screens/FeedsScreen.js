@@ -33,7 +33,6 @@ const getAllBlogs = async () => {
         timeout: 15000,
       }
     );
-console.log("Get All Blogs Response:", response.data);
     return response.data;
 
   } catch (error) {
@@ -327,11 +326,6 @@ const FeedsScreen = ({
           await getAllBlogs();
 
 
-        console.log(
-          "BLOG API RESPONSE:",
-          response
-        );
-
 
         if (
           response?.success
@@ -354,11 +348,6 @@ const FeedsScreen = ({
 
       } catch (error) {
 
-        console.log(
-          "FETCH BLOGS ERROR:",
-          error?.response?.data ||
-          error.message
-        );
 
 
         setError(
@@ -436,10 +425,7 @@ const FeedsScreen = ({
   const handleBlogPress =
     (blog) => {
 
-      console.log(
-        "Selected Blog:",
-        blog?._id
-      );
+
 
 
       /*

@@ -22,7 +22,6 @@ const UserDetailsScreen = () => {
         const response = await apiMiddleware.get(
           `/leave_template/get_all_leave_templates`,
         );
-        console.log('response ???????', response);
 
         setLeaveTemplates(response.data?.data || []);
       } catch (error) {
@@ -35,9 +34,7 @@ const UserDetailsScreen = () => {
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
-        console.log(
-          '========== USER DETAILS REQUEST START =========='
-        );
+
 
         const employeeId =
           await AsyncStorage.getItem('employee_id');
@@ -48,9 +45,7 @@ const UserDetailsScreen = () => {
         const token =
           await AsyncStorage.getItem('userToken');
 
-        console.log('employee_id:', employeeId);
-        console.log('employee_name:', employeeName);
-        console.log('token exists:', !!token);
+
 
         if (token) {
           console.log(
@@ -59,37 +54,13 @@ const UserDetailsScreen = () => {
           );
         }
 
-        console.log(
-          '=============================================='
-        );
+        
 
         const response = await apiMiddleware.get(
           '/company/employee-details',
           {
             withCredentials: true,
           }
-        );
-
-        console.log(
-          '========== EMPLOYEE API SUCCESS =========='
-        );
-
-        console.log(
-          'status:',
-          response?.status
-        );
-
-        console.log(
-          'response.data:',
-          JSON.stringify(
-            response?.data,
-            null,
-            2
-          )
-        );
-
-        console.log(
-          '=========================================='
         );
 
         const data =
@@ -103,38 +74,7 @@ const UserDetailsScreen = () => {
 
       } catch (err) {
 
-        console.log(
-          '========== EMPLOYEE API ERROR =========='
-        );
-
-        console.log(
-          'status:',
-          err?.response?.status
-        );
-
-        console.log(
-          'error data:',
-          JSON.stringify(
-            err?.response?.data,
-            null,
-            2
-          )
-        );
-
-        console.log(
-          'error message:',
-          err?.message
-        );
-
-        console.log(
-          'error config:',
-          err?.config
-        );
-
-        console.log(
-          '========================================='
-        );
-
+      
         setError(
           err?.response?.data?.message ||
           'Failed to fetch employee data.'
@@ -147,18 +87,15 @@ const UserDetailsScreen = () => {
 
     fetchEmployeeData();
   }, []);
-  console.log("employeeData ......", employeeData)
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
         const response = await apiMiddleware.get(`/company/employee-details`, {
           withCredentials: true,
         });
-        console.log('response of users details : ', response.data.data);
         setLeaveTemplatesName(
           response.data.data.official_details?.leave_template,
         );
-        console.log('response: ', response.data.data);
         setEmployeeData(response.data.data);
       } catch (err) {
         setError('Failed to fetch employee data.');
@@ -186,7 +123,6 @@ const UserDetailsScreen = () => {
       </View>
     );
   }
-  console.log('leaveTemplates', leaveTemplates);
 
   const leaveTemplateName =
     leaveTemplates.find(template => template._id === leaveTemplatesName)

@@ -94,14 +94,6 @@ const AppMain = () => {
         const guestToken = await AsyncStorage.getItem('guestToken');
         const guestLoginTime = await AsyncStorage.getItem('guestLoginTime');
 
-        console.log('========== SESSION RESTORE ==========');
-        console.log('Stored accountType:', storedAccountType);
-        console.log('Employee token exists:', !!employeeToken);
-        console.log('Employee loginTime:', employeeLoginTime);
-        console.log('Guest token exists:', !!guestToken);
-        console.log('Guest loginTime:', guestLoginTime);
-        console.log('=====================================');
-
         // =================================================
         // EMPLOYEE SESSION
         // =================================================
@@ -115,7 +107,6 @@ const AppMain = () => {
           const diff = now - parseInt(employeeLoginTime, 10);
 
           if (diff > LOGOUT_MILLISECONDS) {
-            console.log('Employee session expired');
 
             await clearEmployeeAccount();
 
@@ -127,7 +118,6 @@ const AppMain = () => {
               'You have been logged out due to inactivity.',
             );
           } else {
-            console.log('Restoring Employee session');
 
             setAccountType('employee');
             setIsAuthenticated(true);
@@ -141,7 +131,6 @@ const AppMain = () => {
         // =================================================
 
         if (storedAccountType === 'guest' && guestToken && guestLoginTime) {
-          console.log('Restoring Guest session');
 
           setAccountType('guest');
           setIsAuthenticated(true);
@@ -158,7 +147,6 @@ const AppMain = () => {
         // =================================================
 
         if (employeeToken && employeeLoginTime) {
-          console.log('Existing Employee session detected without accountType');
 
           setAccountType('employee');
           setIsAuthenticated(true);
@@ -169,8 +157,6 @@ const AppMain = () => {
         // =================================================
         // NO SESSION
         // =================================================
-
-        console.log('No authenticated session found');
 
         setAccountType(null);
         setIsAuthenticated(false);
@@ -217,7 +203,6 @@ const AppMain = () => {
 
     const setupFCM = async () => {
       try {
-        console.log('🔥 Starting FCM setup...');
 
         const permissionGranted = await requestUserPermission();
 
@@ -234,7 +219,6 @@ const AppMain = () => {
 
         unsubscribe = initFCMListeners();
 
-        console.log('✅ FCM setup completed');
       } catch (error) {
         console.error('❌ FCM setup failed:', error);
       }
@@ -347,7 +331,6 @@ const AppMain = () => {
 
   const handleLogout = async () => {
     try {
-      console.log('========== APP LOGOUT ==========');
 
       // await AsyncStorage.multiRemove([
       //   'userToken',
@@ -361,8 +344,6 @@ const AppMain = () => {
 
       setIsAuthenticated(false);
 
-      console.log('Auth state cleared');
-      console.log('Navigation ready:', navigationRef.current?.isReady());
 
       if (navigationRef.current?.isReady()) {
         navigationRef.current.reset({
@@ -370,12 +351,10 @@ const AppMain = () => {
           routes: [{ name: 'PublicNavigator' }],
         });
 
-        console.log('Navigated to PublicNavigator');
       } else {
         console.log('Navigation is not ready');
       }
 
-      console.log('================================');
     } catch (error) {
       console.error('Error during logout:', error);
     }

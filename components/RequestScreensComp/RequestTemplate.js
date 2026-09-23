@@ -55,8 +55,7 @@ const RequestTemplate = ({
     const fetchLeaveBalance = async () => {
       try {
         if (!appliedData?.requestor_id) return;
-        console.log('appliedData.requestor_id :', appliedData.requestor_id);
-        console.log('appliedData :', appliedData);
+   
 
         const response = await apiMiddleware.get(
           `/leaves-balance/get-leaves-balance?employeeId=${appliedData.requestor_id}`,

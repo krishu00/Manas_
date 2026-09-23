@@ -123,8 +123,6 @@ const AppHeader = () => {
 
   const handleLogout = async () => {
     try {
-      console.log('========== PUBLIC HEADER LOGOUT ==========');
-      console.log('Account type:', accountType);
 
       // ================================================
       // GUEST LOGOUT

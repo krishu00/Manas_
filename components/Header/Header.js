@@ -80,11 +80,6 @@ const Header = ({
         setName(storedEmployeeName || '');
         setEmployeeId(storedEmployeeId || '');
 
-        console.log('========== HEADER USER ==========');
-        console.log('Header employee_name:', storedEmployeeName);
-        console.log('Header employee_id:', storedEmployeeId);
-        console.log('=================================');
-
         return;
       }
 
@@ -202,7 +197,6 @@ const Header = ({
 
   const handleLogout = async () => {
     try {
-      console.log('========== LOGOUT START ==========');
 
       // Clear all authentication/user data
       await AsyncStorage.multiRemove([
@@ -219,13 +213,11 @@ const Header = ({
       setEmployeeId('');
       setDropdownVisible(false);
 
-      console.log('Logout successful');
-      console.log('Navigating after logout...');
+
 
       // Tell Dashboard/App that logout is complete
       onLogoutSuccess?.();
 
-      console.log('========== LOGOUT COMPLETE ==========');
 
     } catch (error) {
       console.error('Logout error:', error);

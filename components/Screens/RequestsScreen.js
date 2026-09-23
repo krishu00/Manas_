@@ -43,14 +43,9 @@ useFocusEffect(
 );
 
 
-  console.log('route.params:', route.params);
-  console.log('selectedRequestId:', selectedRequestId);
-  console.log('openRequestId:', openRequestId);
 
   const handleOutsidePress = () => {
-    console.log("OUTSIDE PRESS");
-console.log("Apply Button Clicked");
-console.log("Dropdown:", showDropdown);
+
     if (showDropdown) {
       setShowDropdown(false);
       Keyboard.dismiss(); // optional

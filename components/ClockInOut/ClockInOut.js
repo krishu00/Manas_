@@ -87,7 +87,6 @@ export default class ClockInOut extends React.Component {
       this.appState.match(/inactive|background/) &&
       nextAppState === 'active'
     ) {
-      console.log('App resumed');
 
       this.checkPunchStatus(dayjs().format('YYYY-MM-DD'));
     }
@@ -233,14 +232,12 @@ export default class ClockInOut extends React.Component {
 
   punchIn = async (latitude, longitude) => {
     try {
-      console.log('asdjkbfajdbs');
 
       this.setState({ loading: true });
 
       const response = await apiMiddleware.post('/attendance/punch_in', {
         data: { latitude, longitude },
       });
-      console.log('punchin ', response);
 
       if (response?.data?.success) {
         const punchInTime = dayjs(response.data.punchInTime || dayjs());
@@ -284,7 +281,6 @@ export default class ClockInOut extends React.Component {
         buttonLabel: 'Punch Out Again',
         nextAction: 'punchOut',
       }));
-      console.log(' response.data.message ', response.data.message);
 
       this.showPopup(
         'Success',

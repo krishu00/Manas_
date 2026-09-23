@@ -442,7 +442,6 @@ const PayslipTemplateNative = ({ payslipResponse }) => {
   // }
 
 const downloadPDF = async () => {
-    console.log("Download PDF function called");
     try {
       const { companyDetails, employeeDetails, payslips } = payslipResponse;
       const payslip = payslips[0];

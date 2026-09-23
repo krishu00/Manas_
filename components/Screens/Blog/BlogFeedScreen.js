@@ -51,7 +51,6 @@ const getAllBlogs = async () => {
   try {
     const url = `${API_URL}/blog/all`;
 
-    console.log('🌐 Blog API:', url);
 
     const response = await axios.get(url, {
       headers: {
@@ -62,10 +61,6 @@ const getAllBlogs = async () => {
 
     return response.data;
   } catch (error) {
-    console.log(
-      '❌ Get All Blogs Error:',
-      error?.response?.data || error?.message || error,
-    );
 
     throw error;
   }
@@ -117,7 +112,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
   });
 
   const showPopup = useCallback((title, message) => {
-    console.log('🔔 Popup:', title, message);
 
     setPopup({
       visible: true,
@@ -155,7 +149,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
   const loadComments = useCallback(async blogId => {
     if (!blogId) {
-      console.log('❌ loadComments: no blog ID');
 
       setComments([]);
       return;
@@ -164,11 +157,9 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     try {
       setCommentsLoading(true);
 
-      console.log('💬 Loading comments for:', blogId);
 
       const response = await getBlogComments(blogId);
 
-      console.log('💬 Comments response:', JSON.stringify(response, null, 2));
 
       const commentList = Array.isArray(response?.data)
         ? response.data
@@ -178,10 +169,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
       setComments(commentList);
     } catch (error) {
-      console.log(
-        '❌ Load comments error:',
-        error?.response?.data || error?.message || error,
-      );
 
       setComments([]);
     } finally {
@@ -197,11 +184,7 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     blog => {
       const blogId = getBlogId(blog);
 
-      console.log('💬 Open comments');
 
-      console.log('💬 Blog:', blog);
-
-      console.log('💬 Blog ID:', blogId);
 
       if (!blogId) {
         showPopup(
@@ -234,7 +217,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       return;
     }
 
-    console.log('❌ Closing comment modal');
 
     Keyboard.dismiss();
 
@@ -255,18 +237,9 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     blog => {
       const blogId = blog?._id;
 
-      console.log('================================');
 
-      console.log('📖 OPEN BLOG');
-
-      console.log('Full blog:', JSON.stringify(blog, null, 2));
-
-      console.log('Blog ID:', blogId);
-
-      console.log('Navigation exists:', !!navigation);
 
       if (!blogId) {
-        console.log('❌ Cannot open BlogDetail: blog ID missing');
 
         showPopup('Unable to Open Blog', 'Blog information is missing.');
 
@@ -292,11 +265,7 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
         blog?.isLikedByMe ?? blog?.liked ?? blog?.isLiked ?? false,
       );
 
-      console.log('❤️ Like pressed');
 
-      console.log('❤️ Blog ID:', blogId);
-
-      console.log('❤️ Current liked:', currentlyLiked);
 
       if (!blogId) {
         showPopup('Unable to Like', 'This blog does not contain a valid ID.');
@@ -316,7 +285,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
           ? await unlikeBlog(blogId)
           : await likeBlog(blogId);
 
-        console.log('❤️ Like API response:', JSON.stringify(response, null, 2));
 
         if (response?.success === false) {
           showPopup(
@@ -357,10 +325,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
           }),
         );
       } catch (error) {
-        console.log(
-          '❌ Like API Error:',
-          error?.response?.data || error?.message || error,
-        );
 
         if (error?.response?.status === 401) {
           // await AsyncStorage.removeItem('userToken');
@@ -410,22 +374,17 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
       setCommentSubmitting(true);
 
-      console.log('💬 Posting comment');
-      console.log('💬 Blog ID:', selectedBlogId);
+  
 
       const response = await addBlogComment(selectedBlogId, trimmedComment);
 
-      console.log(
-        '✅ Comment API response:',
-        JSON.stringify(response, null, 2),
-      );
+
 
       // =====================================================
       // SUCCESS
       // =====================================================
 
       if (response?.success === true) {
-        console.log('✅ Comment added successfully');
 
         // Clear input
         setCommentText('');
@@ -464,7 +423,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       // UNEXPECTED RESPONSE
       // =====================================================
 
-      console.log('⚠️ Unexpected comment response:', response);
 
       showPopup(
         'Unable to Comment',
@@ -535,20 +493,10 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     try {
       setError(null);
 
-      // console.log(
-      //   '📚 Fetching blogs...',
-      // );
+
 
       const response = await getAllBlogs();
 
-      // console.log(
-      //   '📚 Raw API response:',
-      //   JSON.stringify(
-      //     response,
-      //     null,
-      //     2,
-      //   ),
-      // );
 
       let blogList = [];
 
@@ -560,10 +508,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
         blogList = response;
       }
 
-      // console.log(
-      //   '📚 Blog count:',
-      //   blogList.length,
-      // );
 
       /*
        * VERY IMPORTANT DEBUGGING

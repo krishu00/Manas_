@@ -58,8 +58,6 @@ const CreateBlogScreen = ({ navigation }) => {
   // =====================================================
 
   const showPopup = useCallback((popupTitle, popupMessage) => {
-    console.log('🔔 SHOW POPUP:', popupTitle, popupMessage);
-
     setPopup({
       visible: true,
       title: popupTitle || 'Message',
@@ -94,14 +92,11 @@ const CreateBlogScreen = ({ navigation }) => {
       response => {
         // User cancelled
         if (response.didCancel) {
-          console.log('Image selection cancelled');
           return;
         }
 
         // Picker error
         if (response.errorCode) {
-          console.log('❌ Image Picker Error:', response.errorMessage);
-
           showPopup(
             'Image Error',
             response.errorMessage || 'Unable to select image.',
@@ -114,22 +109,10 @@ const CreateBlogScreen = ({ navigation }) => {
         const asset = response.assets?.[0];
 
         if (!asset?.uri) {
-          console.log('❌ No image URI returned');
-
           showPopup('Image Error', 'Unable to read the selected image.');
 
           return;
         }
-
-        // Debug
-        console.log('========== IMAGE SELECTED ==========');
-
-        console.log('URI:', asset.uri);
-        console.log('TYPE:', asset.type);
-        console.log('FILE NAME:', asset.fileName);
-        console.log('FILE SIZE:', asset.fileSize);
-
-        console.log('====================================');
 
         // Store complete asset
         setSelectedImage(asset);
@@ -153,16 +136,6 @@ const CreateBlogScreen = ({ navigation }) => {
     const checkAuth = async () => {
       try {
         const session = await getBlogAuthSession();
-
-        console.log('========== CREATE BLOG AUTH CHECK ==========');
-
-        console.log('Authenticated:', session.isAuthenticated);
-
-        console.log('Account Type:', session.accountType);
-
-        console.log('Name:', session.name);
-
-        console.log('=============================================');
 
         setIsLoggedIn(session.isAuthenticated);
       } catch (error) {
@@ -195,16 +168,6 @@ const CreateBlogScreen = ({ navigation }) => {
     // ===================================================
 
     const session = await getBlogAuthSession();
-
-    console.log('========== CREATE BLOG SESSION ==========');
-
-    console.log('Authenticated:', session.isAuthenticated);
-
-    console.log('Account Type:', session.accountType);
-
-    console.log('User:', session.name);
-
-    console.log('=========================================');
 
     if (!session.isAuthenticated) {
       showPopup('Login Required', 'Please login to create a blog.');
@@ -242,25 +205,9 @@ const CreateBlogScreen = ({ navigation }) => {
     setSubmitting(true);
 
     try {
-      console.log('========== CREATE BLOG ==========');
-
-      console.log('Title:', title.trim());
-
-      console.log('Description length:', description.trim().length);
-
-      console.log('Has image:', !!selectedImage);
-
       if (selectedImage) {
-        console.log('Image URI:', selectedImage.uri);
-
-        console.log('Image type:', selectedImage.type);
-
-        console.log('Image name:', selectedImage.fileName);
-
-        console.log('Image size:', selectedImage.fileSize);
+        console.log('🖼️ Selected Image:', selectedImage);
       }
-
-      console.log('=================================');
 
       // =================================================
       // API CALL
@@ -279,8 +226,6 @@ const CreateBlogScreen = ({ navigation }) => {
       // =================================================
       // SUCCESS
       // =================================================
-
-      console.log('✅ Blog created successfully:', response);
 
       showPopup(
         'Success',
@@ -318,7 +263,7 @@ const CreateBlogScreen = ({ navigation }) => {
             },
           });
         } else if (session.accountType === 'employee') {
-          navigation.navigate('BlogFeed', {
+          navigation.navigate('Blog', {
             refreshKey: Date.now(),
           });
         }

@@ -7,7 +7,6 @@ import { getAuthToken } from '../utils/auth';
 // =====================================================
 
 // const API_URL = API_URL;
-console.log('🌐 Blog API Base URL:', API_URL);
 
 
 // =====================================================
@@ -93,10 +92,7 @@ const getAuthHeaders = async (isMultipart = false) => {
 
 export const getAllBlogs = async () => {
   try {
-    console.log(
-      '🌐 GET:',
-      `${API_URL}/blog/all`,
-    );
+
 
     const response = await axios.get(
       `${API_URL}/blog/all`,
@@ -105,10 +101,7 @@ export const getAllBlogs = async () => {
       },
     );
 
-    // console.log(
-    //   '✅ Get All Blogs Response:',
-    //   response.data,
-    // );
+    
 
     return response.data;
 
@@ -141,10 +134,7 @@ export const getBlogById = async blogId => {
 
   try {
 
-    console.log(
-      '🌐 GET:',
-      `${API_URL}/blog/${blogId}`,
-    );
+
 
     const response = await axios.get(
       `${API_URL}/blog/${blogId}`,
@@ -153,10 +143,6 @@ export const getBlogById = async blogId => {
       },
     );
 
-    console.log(
-      '✅ Get Single Blog Response:',
-      response.data,
-    );
 
     return response.data;
 
@@ -274,34 +260,6 @@ export const createBlog = async blogData => {
       );
 
 
-      console.log(
-        '========== BLOG IMAGE =========='
-      );
-
-      console.log(
-        'URI:',
-        image.uri,
-      );
-
-      console.log(
-        'TYPE:',
-        image.type,
-      );
-
-      console.log(
-        'NAME:',
-        image.fileName,
-      );
-
-      console.log(
-        'SIZE:',
-        image.fileSize,
-      );
-
-      console.log(
-        '================================='
-      );
-
     } else {
 
       console.log(
@@ -315,14 +273,6 @@ export const createBlog = async blogData => {
     // REQUEST
     // ===================================================
 
-    console.log(
-      '🌐 POST:',
-      `${API_URL}/blog/create`,
-    );
-
-    console.log(
-      '📦 Sending multipart/form-data',
-    );
 
 
     const response =
@@ -342,11 +292,6 @@ export const createBlog = async blogData => {
     // ===================================================
     // RESPONSE
     // ===================================================
-
-    console.log(
-      '✅ Create Blog Response:',
-      response.data,
-    );
 
 
     return response.data;
@@ -385,10 +330,7 @@ export const likeBlog = async blogId => {
     const headers =
       await getAuthHeaders();
 
-    console.log(
-      '🌐 POST:',
-      `${API_URL}/blog/${blogId}/like`,
-    );
+
 
     const response = await axios.post(
       `${API_URL}/blog/${blogId}/like`,
@@ -397,11 +339,6 @@ export const likeBlog = async blogId => {
         headers,
         timeout: 15000,
       },
-    );
-
-    console.log(
-      '✅ Like Blog Response:',
-      response.data,
     );
 
     return response.data;
@@ -438,10 +375,7 @@ export const unlikeBlog = async blogId => {
     const headers =
       await getAuthHeaders();
 
-    console.log(
-      '🌐 DELETE:',
-      `${API_URL}/blog/${blogId}/like`,
-    );
+
 
     const response = await axios.delete(
       `${API_URL}/blog/${blogId}/like`,
@@ -451,10 +385,7 @@ export const unlikeBlog = async blogId => {
       },
     );
 
-    console.log(
-      '✅ Unlike Blog Response:',
-      response.data,
-    );
+
 
     return response.data;
 
@@ -487,10 +418,7 @@ export const getBlogComments = async blogId => {
 
   try {
 
-    console.log(
-      '🌐 GET:',
-      `${API_URL}/blog/${blogId}/comments`,
-    );
+
 
     const response = await axios.get(
       `${API_URL}/blog/${blogId}/comments`,
@@ -499,10 +427,7 @@ export const getBlogComments = async blogId => {
       },
     );
 
-    console.log(
-      '✅ Get Blog Comments Response:',
-      response.data,
-    );
+
 
     return response.data;
 
@@ -554,10 +479,7 @@ export const addBlogComment = async (
     const headers =
       await getAuthHeaders();
 
-    console.log(
-      '🌐 POST:',
-      `${API_URL}/blog/${blogId}/comment`,
-    );
+
 
     const response = await axios.post(
       `${API_URL}/blog/${blogId}/comment`,
@@ -570,10 +492,7 @@ export const addBlogComment = async (
       },
     );
 
-    console.log(
-      '✅ Add Blog Comment Response:',
-      response.data,
-    );
+
 
     return response.data;
 
@@ -619,10 +538,7 @@ export const deleteBlogComment = async (
     const headers =
       await getAuthHeaders();
 
-    console.log(
-      '🌐 DELETE:',
-      `${API_URL}/blog/${blogId}/comment/${commentId}`,
-    );
+
 
     const response = await axios.delete(
       `${API_URL}/blog/${blogId}/comment/${commentId}`,
@@ -632,10 +548,7 @@ export const deleteBlogComment = async (
       },
     );
 
-    console.log(
-      '✅ Delete Blog Comment Response:',
-      response.data,
-    );
+
 
     return response.data;
 
@@ -662,10 +575,6 @@ export const shareBlog = async blogId => {
 
   try {
 
-    console.log(
-      '🌐 Share Blog API:',
-      `${API_URL}/blog/${blogId}/share`,
-    );
 
     const response =
       await axios.post(
@@ -675,11 +584,6 @@ export const shareBlog = async blogId => {
           timeout: 15000,
         },
       );
-
-    console.log(
-      '✅ Share Blog Response:',
-      response.data,
-    );
 
     return response.data;
 

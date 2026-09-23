@@ -24,6 +24,7 @@ import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MyPayslip from './PaySlip/MyPayslip';
 import BlogFeedScreen from './Screens/Blog/BlogFeedScreen';
+import CreateBlogScreen from './Screens/Blog/CreateBlogScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -61,18 +62,15 @@ const Dashboard = ({ onLogoutSuccess }) => {
   }, [currentTabIndex]);
 
   const handleNavigateToSalary = () => {
-    console.log('🟡 handleNavigateToSalary called');
-    console.log('🟡 tabNavigation exists:', !!tabNavigation);
+ 
     if (tabNavigation) {
-      console.log('🟡 Calling navigate to Salary');
       tabNavigation.navigate('Salary');
     } else {
       console.log('🟡 ERROR: tabNavigation is null/undefined');
     }
   };
   const handleNavigateToProfile = () => {
-    console.log('🟡 handleNavigateToProfile called');
-    console.log('🟡 tabNavigation exists:', !!tabNavigation);
+
     if (tabNavigation) {
       console.log('🟡 Calling navigate to Profile');
       setDropdownVisible(false); // Close dropdown before navigating
@@ -163,13 +161,15 @@ const Dashboard = ({ onLogoutSuccess }) => {
                 component={TripScreen}
               /> */}
               <Tab.Screen name="Blog">
-                {props => (
-                  <BlogFeedScreen
-                    {...props}
-                    embedded
-                  />
-                )}
+                {props => <BlogFeedScreen {...props} embedded />}
               </Tab.Screen>
+              <Tab.Screen
+                name="CreateBlog"
+                component={CreateBlogScreen}
+                options={{
+                  tabBarItemStyle: { display: 'none' },
+                }}
+              />
               <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
               {/* Salary screen kept but hidden from tab bar */}
               <Tab.Screen

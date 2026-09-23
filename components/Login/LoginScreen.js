@@ -82,7 +82,6 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
   const handleLogin = async () => {
     const abortController = new AbortController();
     setController(abortController);
-    console.log('apiMiddleware', apiMiddleware);
     try {
       const response = await apiMiddleware.post(
         '/login',
@@ -187,18 +186,12 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
       // }
 
       if (response?.data?.success) {
-        console.log('response?.data login:', response?.data);
-
         // =====================================================
         // GUEST LOGIN
         // =====================================================
 
         if (response?.data?.accountType === 'guest') {
           const { guest, token } = response.data;
-
-          console.log('========== GUEST LOGIN ==========');
-          console.log('Guest:', guest);
-          console.log('Guest token exists:', !!token);
 
           if (!guest || !token) {
             showPopup(
@@ -224,27 +217,6 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
           await AsyncStorage.setItem('guest_name', guest.name || '');
           await AsyncStorage.setItem('guest_email', guest.email || '');
           await AsyncStorage.setItem('accountType', 'guest');
-
-          console.log('========== GUEST STORAGE CHECK ==========');
-          console.log(
-            'accountType:',
-            await AsyncStorage.getItem('accountType'),
-          );
-          console.log('guestToken:', await AsyncStorage.getItem('guestToken'));
-          console.log(
-            'guestLoginTime:',
-            await AsyncStorage.getItem('guestLoginTime'),
-          );
-          console.log('guest_name:', await AsyncStorage.getItem('guest_name'));
-          console.log(
-            'guest_email:',
-            await AsyncStorage.getItem('guest_email'),
-          );
-          console.log(
-            'employee userToken:',
-            await AsyncStorage.getItem('userToken'),
-          );
-          console.log('==========================================');
 
           // Guest should stay inside PublicNavigator
           navigation.reset({
@@ -273,7 +245,6 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
           return;
         }
 
-        console.log('response?.data.employee:', response?.data?.employee);
 
         if (employee && employee.employee_id && employee.company_code) {
           // Clear any existing Guest session
@@ -329,34 +300,6 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
           // ===================================================
           // Employee storage verification
           // ===================================================
-
-          console.log('========== EMPLOYEE STORAGE CHECK ==========');
-
-          console.log(
-            'accountType:',
-            await AsyncStorage.getItem('accountType'),
-          );
-
-          console.log('userToken:', await AsyncStorage.getItem('userToken'));
-
-          console.log(
-            'employee_id:',
-            await AsyncStorage.getItem('employee_id'),
-          );
-
-          console.log(
-            'company_Code:',
-            await AsyncStorage.getItem('company_Code'),
-          );
-
-          console.log(
-            'employee_name:',
-            await AsyncStorage.getItem('employee_name'),
-          );
-
-          console.log('loginTime:', await AsyncStorage.getItem('loginTime'));
-
-          console.log('=============================================');
 
           // Existing Employee navigation
           onLoginSuccess(token);
