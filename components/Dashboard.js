@@ -5,7 +5,7 @@ import React, {
   createContext,
   useContext,
 } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import {
   createBottomTabNavigator,
   useBottomTabBarHeight,
@@ -34,11 +34,21 @@ export const TabNavigationContext = createContext(null);
 // Helper component that captures the proper TabNavigator navigation
 const HomeScreenWrapper = ({ setTabNavigation }) => {
   const navigation = useNavigation();
+  const currentTabIndex = useNavigationState(state => state.index);
+  useEffect(() => {
+    console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
+    setTabNavigation(navigation);
+  }, [navigation, setTabNavigation]);
+
+  useEffect(() => {
+    setDropdownVisible(false);
+    setCloseDropdownFlag(false);
+  }, [currentTabIndex, setCloseDropdownFlag, setDropdownVisible]);
 
   useEffect(() => {
     console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
     setTabNavigation(navigation);
-  }, []);
+  });
 
   return <HomeScreen />;
 };
@@ -62,7 +72,6 @@ const Dashboard = ({ onLogoutSuccess }) => {
   }, [currentTabIndex]);
 
   const handleNavigateToSalary = () => {
- 
     if (tabNavigation) {
       tabNavigation.navigate('Salary');
     } else {
@@ -70,7 +79,6 @@ const Dashboard = ({ onLogoutSuccess }) => {
     }
   };
   const handleNavigateToProfile = () => {
-
     if (tabNavigation) {
       console.log('🟡 Calling navigate to Profile');
       setDropdownVisible(false); // Close dropdown before navigating
@@ -145,6 +153,8 @@ const Dashboard = ({ onLogoutSuccess }) => {
                   <HomeScreenWrapper
                     {...props}
                     setTabNavigation={setTabNavigation}
+                    setDropdownVisible={setDropdownVisible}
+                    setCloseDropdownFlag={setCloseDropdownFlag}
                   />
                 )}
               </Tab.Screen>
@@ -196,7 +206,7 @@ const styles = StyleSheet.create({
   },
   headerWrapper: {
     position: 'absolute',
-    top: 0,
+    top: Platform.OS == 'ios' ? 30 : 0,
     left: 0,
     right: 0,
 
@@ -211,7 +221,7 @@ const styles = StyleSheet.create({
 
   tabsWrapper: {
     flex: 1,
-    marginTop: 80, // header height
+    marginTop: Platform.OS == 'ios' ? 110 : 80, // header height
   },
 });
 

@@ -410,7 +410,7 @@ const CreateBlogScreen = ({ navigation }) => {
         {/* IMAGE */}
         {/* ================================================= */}
 
-        <Text style={styles.label}>Blog Image (optional)</Text>
+        <Text style={styles.label}>Blog Image </Text>
 
         <TouchableOpacity
           style={styles.imagePickerButton}

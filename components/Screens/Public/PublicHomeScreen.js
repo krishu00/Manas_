@@ -215,69 +215,6 @@ const PublicHomeScreen = ({ navigation }) => {
           <Text style={styles.welcomeSubtitle}>Your workplace companion</Text>
         </View>
 
-        {/* Today's Overview */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Overview</Text>
-
-          <View style={styles.overviewContainer}>
-            {/* WEATHER */}
-            <TouchableOpacity
-              style={styles.overviewCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Weather')}
-            >
-              <View style={styles.cardTopRow}>
-                <Text style={styles.cardIcon}>☁️</Text>
-
-                <Text style={styles.openText}>View</Text>
-              </View>
-
-              <Text style={styles.cardTitle}>Weather</Text>
-
-              {weatherLoading ? (
-                <ActivityIndicator size="small" style={styles.cardLoader} />
-              ) : weather ? (
-                <>
-                  <Text style={styles.mainValue}>
-                    {Math.round(weather.temperature)}
-                    °C
-                  </Text>
-
-                  <Text style={styles.cardSubtitle}>
-                    {getWeatherDescription(weather.weatherCode)}
-                  </Text>
-                </>
-              ) : (
-                <Text style={styles.cardSubtitle}>Weather unavailable</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* STEPS */}
-            <TouchableOpacity
-              style={styles.overviewCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Steps')}
-            >
-              <View style={styles.cardTopRow}>
-                <Text style={styles.cardIcon}>👟</Text>
-
-                <Text style={styles.openText}>View</Text>
-              </View>
-
-              <Text style={styles.cardTitle}>Steps</Text>
-
-              {steps !== null ? (
-                <>
-                  <Text style={styles.mainValue}>{steps.toLocaleString()}</Text>
-
-                  <Text style={styles.cardSubtitle}>steps today</Text>
-                </>
-              ) : (
-                <Text style={styles.cardSubtitle}>Activity unavailable</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
 
         {/* Quick Access */}
         <View style={styles.section}>
