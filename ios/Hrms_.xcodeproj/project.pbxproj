@@ -22,6 +22,9 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		92D8E47278843D15DA74BEA5 /* libPods-Hrms_.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A9FA0F6163B6A7EE26DDDD4F /* libPods-Hrms_.a */; };
+		F5B0DA7F30822C9300AAA82F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B0DA7E30822C9300AAA82F /* SceneDelegate.swift */; };
+		F5B0DA8030822C9300AAA82F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B0DA7E30822C9300AAA82F /* SceneDelegate.swift */; };
+		F5B0DA8130822C9300AAA82F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B0DA7E30822C9300AAA82F /* SceneDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +44,7 @@
 		A9FA0F6163B6A7EE26DDDD4F /* libPods-Hrms_.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Hrms_.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F5803399305A88B9002AB7BE /* Hrms_.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Hrms_.entitlements; path = Hrms_/Hrms_.entitlements; sourceTree = "<group>"; };
+		F5B0DA7E30822C9300AAA82F /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		FF4D26B9239F6BB4D09DADC5 /* Pods-Hrms_.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Hrms_.debug.xcconfig"; path = "Target Support Files/Pods-Hrms_/Pods-Hrms_.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -79,6 +83,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				6BC722CB3034669A00837226 /* GoogleService-Info.plist */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				F5B0DA7E30822C9300AAA82F /* SceneDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -401,6 +406,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				F5B0DA8030822C9300AAA82F /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -409,6 +415,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6B49DF013029BAD300999BAA /* AppDelegate.swift in Sources */,
+				F5B0DA7F30822C9300AAA82F /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +424,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6B49DF143029BAD500999BAA /* AppDelegate.swift in Sources */,
+				F5B0DA8130822C9300AAA82F /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -433,10 +441,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2VSUSP9UH5;
+				DEVELOPMENT_TEAM = L5BL7XRTK8;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Hrms_/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Manas;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -448,12 +457,16 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
-				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.krishnasharma.manas;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.Hrms-";
 				PRODUCT_NAME = Hrms_;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -468,9 +481,10 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2VSUSP9UH5;
+				DEVELOPMENT_TEAM = L5BL7XRTK8;
 				INFOPLIST_FILE = Hrms_/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Manas;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -485,7 +499,12 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Hrms_;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;

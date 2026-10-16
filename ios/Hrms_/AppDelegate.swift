@@ -1,3 +1,4 @@
+
 import UIKit
 import FirebaseCore
 import React
@@ -6,49 +7,66 @@ import ReactAppDependencyProvider
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-  var window: UIWindow?
 
-  var reactNativeDelegate: ReactNativeDelegate?
-  var reactNativeFactory: RCTReactNativeFactory?
+    var window: UIWindow?
 
-  func application(
-  _ application: UIApplication,
-  didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
-) -> Bool {
+    var reactNativeDelegate: ReactNativeDelegate?
+    var reactNativeFactory: RCTReactNativeFactory?
 
-    FirebaseApp.configure()
-print("🔥🔥 FirebaseApp.configure() COMPLETED")
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions:
+            [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
 
-    let delegate = ReactNativeDelegate()
-    let factory = RCTReactNativeFactory(delegate: delegate)
-    delegate.dependencyProvider = RCTAppDependencyProvider()
+        FirebaseApp.configure()
+        print("FirebaseApp.configure() completed")
 
-    reactNativeDelegate = delegate
-    reactNativeFactory = factory
+        let delegate = ReactNativeDelegate()
+        let factory = RCTReactNativeFactory(delegate: delegate)
 
-    window = UIWindow(frame: UIScreen.main.bounds)
+        delegate.dependencyProvider = RCTAppDependencyProvider()
 
-    factory.startReactNative(
-      withModuleName: "Hrms_",
-      in: window,
-      launchOptions: launchOptions
-    )
+        reactNativeDelegate = delegate
+        reactNativeFactory = factory
 
-    return true
-}
+        return true
+    }
+
+    // Required for the traditional app delegate,
+    // but the window is now created by the scene delegate.
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession:
+            UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+
+        let configuration = UISceneConfiguration(
+            name: "Default Configuration",
+            sessionRole: connectingSceneSession.role
+        )
+
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 
-  override func sourceURL(for bridge: RCTBridge) -> URL? {
-    self.bundleURL()
-  }
+    override func sourceURL(for bridge: RCTBridge) -> URL? {
+        bundleURL()
+    }
 
-  override func bundleURL() -> URL? {
-#if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
-#else
-    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
-#endif
-  }
+    override func bundleURL() -> URL? {
+        #if DEBUG
+        return RCTBundleURLProvider.sharedSettings()
+            .jsBundleURL(forBundleRoot: "index")
+        #else
+        return Bundle.main.url(
+            forResource: "main",
+            withExtension: "jsbundle"
+        )
+        #endif
+    }
 }
