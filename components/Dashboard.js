@@ -1,26 +1,18 @@
 import React, {
   useState,
-  useRef,
   useEffect,
   createContext,
   useContext,
 } from 'react';
-import { View, StyleSheet, Pressable, Platform } from 'react-native';
-import {
-  createBottomTabNavigator,
-  useBottomTabBarHeight,
-} from '@react-navigation/bottom-tabs';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useNavigationState } from '@react-navigation/native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 import Header from './Header/Header';
 import HomeScreen from './Screens/HomeScreen';
-import FeedsScreen from './Screens/FeedsScreen';
 import RequestScreen from './Screens/RequestsScreen';
-import MoreScreen from './Screens/MoreScreens';
-import TripScreen from './Screens/TripScreen';
 import UserDetailsScreen from './UserDetailsScreen/UserDetailsScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MyPayslip from './PaySlip/MyPayslip';
 import BlogFeedScreen from './Screens/Blog/BlogFeedScreen';
@@ -28,48 +20,73 @@ import CreateBlogScreen from './Screens/Blog/CreateBlogScreen';
 
 const Tab = createBottomTabNavigator();
 
+const createTabIconRenderer = name => ({ focused }) => (
+  <Icon
+    name={name}
+    color={focused ? '#6a9689' : 'darkgray'}
+    size={30}
+  />
+);
+
+const tabIconRenderers = {
+  Home: createTabIconRenderer('home'),
+  Request: createTabIconRenderer('envelope'),
+  Blog: createTabIconRenderer('newspaper-o'),
+  UserProfile: createTabIconRenderer('user'),
+};
+
+const createTabScreenOptions = insets => ({ route }) => ({
+  headerShown: false,
+  tabBarIcon: tabIconRenderers[route.name],
+  tabBarActiveTintColor: '#6a9689',
+  tabBarInactiveTintColor: 'darkgray',
+  tabBarStyle: [
+    {
+      height: 55 + insets.bottom,
+      paddingBottom: 10 + insets.bottom,
+      paddingTop: 5,
+    },
+  ],
+});
+
 // Create Navigation Context
 export const TabNavigationContext = createContext(null);
 
 // Helper component that captures the proper TabNavigator navigation
-const HomeScreenWrapper = ({ setTabNavigation }) => {
+const HomeScreenWrapper = () => {
+  const {
+    setNavigation,
+    setDropdownVisible,
+    setCloseDropdownFlag,
+  } = useContext(TabNavigationContext);
   const navigation = useNavigation();
   const currentTabIndex = useNavigationState(state => state.index);
+
   useEffect(() => {
     console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
-    setTabNavigation(navigation);
-  }, [navigation, setTabNavigation]);
+    setNavigation(navigation);
+  }, [navigation, setNavigation]);
 
   useEffect(() => {
     setDropdownVisible(false);
     setCloseDropdownFlag(false);
   }, [currentTabIndex, setCloseDropdownFlag, setDropdownVisible]);
 
-  useEffect(() => {
-    console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
-    setTabNavigation(navigation);
-  });
-
   return <HomeScreen />;
 };
+
+const BlogScreenWrapper = props => (
+  <BlogFeedScreen {...props} embedded />
+);
 
 const Dashboard = ({ onLogoutSuccess }) => {
   const [closeDropdownFlag, setCloseDropdownFlag] = useState(false);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [tabNavigation, setTabNavigation] = useState(null);
 
-  const navigation = useNavigation();
-  const currentTabIndex = useNavigationState(state => state.index);
-
   const handleOutsidePress = () => {
     setCloseDropdownFlag(true);
   };
-
-  // Reset dropdown when tab changes
-  useEffect(() => {
-    setDropdownVisible(false);
-    setCloseDropdownFlag(false);
-  }, [currentTabIndex]);
 
   const handleNavigateToSalary = () => {
     if (tabNavigation) {
@@ -91,14 +108,19 @@ const Dashboard = ({ onLogoutSuccess }) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
       {dropdownVisible && (
         <TouchableWithoutFeedback onPress={handleOutsidePress}>
           <View style={styles.globalOverlay} />
         </TouchableWithoutFeedback>
       )}
       <TabNavigationContext.Provider
-        value={{ navigation: tabNavigation, setNavigation: setTabNavigation }}
+        value={{
+          navigation: tabNavigation,
+          setNavigation: setTabNavigation,
+          setDropdownVisible,
+          setCloseDropdownFlag,
+        }}
       >
         <View style={styles.container}>
           <View style={styles.headerWrapper}>
@@ -114,50 +136,12 @@ const Dashboard = ({ onLogoutSuccess }) => {
 
           <View style={styles.tabsWrapper}>
             <Tab.Navigator
-              screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarIcon: ({ focused }) => {
-                  let iconName;
-
-                  switch (route.name) {
-                    case 'Home':
-                      iconName = 'home';
-                      break;
-                    case 'Request':
-                      iconName = 'envelope';
-                      break;
-                    case 'Blog':
-                      iconName = 'newspaper-o';
-                      break;
-                    case 'UserProfile':
-                      iconName = 'user';
-                      break;
-                  }
-
-                  const color = focused ? '#6a9689' : 'darkgray';
-                  return <Icon name={iconName} color={color} size={30} />;
-                },
-                tabBarActiveTintColor: '#6a9689',
-                tabBarInactiveTintColor: 'darkgray',
-                tabBarStyle: [
-                  {
-                    height: 55 + insets.bottom,
-                    paddingBottom: 10 + insets.bottom,
-                    paddingTop: 5,
-                  },
-                ],
-              })}
+              screenOptions={createTabScreenOptions(insets)}
             >
-              <Tab.Screen name="Home">
-                {props => (
-                  <HomeScreenWrapper
-                    {...props}
-                    setTabNavigation={setTabNavigation}
-                    setDropdownVisible={setDropdownVisible}
-                    setCloseDropdownFlag={setCloseDropdownFlag}
-                  />
-                )}
-              </Tab.Screen>
+              <Tab.Screen
+                name="Home"
+                component={HomeScreenWrapper}
+              />
               <Tab.Screen
                 name="Request"
                 component={RequestScreen}
@@ -170,9 +154,10 @@ const Dashboard = ({ onLogoutSuccess }) => {
                 name="Trips"
                 component={TripScreen}
               /> */}
-              <Tab.Screen name="Blog">
-                {props => <BlogFeedScreen {...props} embedded />}
-              </Tab.Screen>
+              <Tab.Screen
+                name="Blog"
+                component={BlogScreenWrapper}
+              />
               <Tab.Screen
                 name="CreateBlog"
                 component={CreateBlogScreen}
@@ -201,12 +186,15 @@ const Dashboard = ({ onLogoutSuccess }) => {
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
   headerWrapper: {
     position: 'absolute',
-    top: Platform.OS == 'ios' ? 30 : 0,
+    top: Platform.OS === 'ios' ? 30 : 0,
     left: 0,
     right: 0,
 
@@ -221,7 +209,7 @@ const styles = StyleSheet.create({
 
   tabsWrapper: {
     flex: 1,
-    marginTop: Platform.OS == 'ios' ? 110 : 80, // header height
+    marginTop: Platform.OS === 'ios' ? 110 : 80, // header height
   },
 });
 
