@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { logout as logoutApi } from '../../src/api/authApi';
 
 const AppHeader = () => {
   const navigation = useNavigation();
@@ -123,6 +124,12 @@ const AppHeader = () => {
 
   const handleLogout = async () => {
     try {
+      try {
+        console.log("logout Api called");
+        await logoutApi();
+      } catch (error) {
+        console.error('Logout API error:', error);
+      }
 
       // ================================================
       // GUEST LOGOUT

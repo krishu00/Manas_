@@ -11,6 +11,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { logout as logoutApi } from '../../src/api/authApi';
 
 import { apiMiddleware } from '../../src/apiMiddleware/apiMiddleware';
 import Popup from '../Popup/Popup';
@@ -197,6 +198,11 @@ const Header = ({
 
   const handleLogout = async () => {
     try {
+      try {
+        await logoutApi();
+      } catch (error) {
+        console.error('Logout API error:', error);
+      }
 
       // Clear all authentication/user data
       await AsyncStorage.multiRemove([
