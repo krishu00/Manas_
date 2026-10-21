@@ -668,7 +668,7 @@ const FeedsScreen = ({
         <Text
           style={styles.feedTitle}
         >
-          Latest Blogs
+          Latest Blogsx
         </Text>
 
 

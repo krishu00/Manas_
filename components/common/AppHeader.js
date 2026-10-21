@@ -9,6 +9,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { logout as logoutApi } from '../../src/api/authApi';
+import Popup from '../Popup/Popup';
 
 const AppHeader = () => {
   const navigation = useNavigation();
@@ -16,6 +17,7 @@ const AppHeader = () => {
   const [accountType, setAccountType] = useState(null);
   const [userName, setUserName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
+  const [logoutPopupVisible, setLogoutPopupVisible] = useState(false);
 
   // =====================================================
   // CHECK CURRENT SESSION
@@ -167,10 +169,7 @@ const AppHeader = () => {
       setUserName('');
       setEmployeeId('');
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'PublicNavigator' }],
-      });
+      setLogoutPopupVisible(true);
 
       console.log('Public Header logout completed');
     } catch (error) {
@@ -251,6 +250,20 @@ const AppHeader = () => {
           </TouchableOpacity>
         )}
       </View>
+      {logoutPopupVisible && (
+        <Popup
+          title="Logout Successful"
+          message="You have been logged out successfully."
+          onClose={() => {
+            setLogoutPopupVisible(false);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'PublicNavigator' }],
+            });
+          }}
+          autoCloseDelay={2000}
+        />
+      )}
     </SafeAreaView>
   );
 };

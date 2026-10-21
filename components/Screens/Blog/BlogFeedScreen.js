@@ -24,10 +24,7 @@ import { API_URL } from '@env';
 import {
   useFocusEffect,
   useRoute,
-  useNavigation,
 } from '@react-navigation/native';
-
-import { navigationRef } from '../../../src/utils/NavigationService';
 
 import AppHeader from '../../common/AppHeader';
 import Popup from '../../Popup/Popup';
@@ -37,37 +34,11 @@ import {
   likeBlog,
   unlikeBlog,
 } from '../../../src/api/blogApi';
+import { getBlogAuthSession } from '../../../src/utils/auth';
 
 import { getCommentAuthorName } from './CommentItem';
 
 import BlogCard from '../../blog/BlogCard';
-
-import {
-  createBottomTabNavigator,
-  useBottomTabBarHeight,
-} from '@react-navigation/bottom-tabs';
-const Tab = createBottomTabNavigator();
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import RequestScreen from '../../Screens/RequestsScreen';
-import HomeScreen from '../../Screens/HomeScreen';
-import UserDetailsScreen from '../../UserDetailsScreen/UserDetailsScreen';
-import MyPayslip from '../../PaySlip/MyPayslip';
-
-/* =====================================================
-   CONFIG
-===================================================== */
-
-const HomeScreenWrapper = ({ setTabNavigation }) => {
-  const navigation = useNavigation();
-
-  useEffect(() => {
-    console.log('🟢 HomeScreenWrapper - capturing TabNavigator navigation');
-    setTabNavigation(navigation);
-  });
-
-  return <HomeScreen />;
-};
 
 const getAllBlogs = async () => {
   try {
@@ -104,7 +75,6 @@ const getAllBlogs = async () => {
 
 const BlogFeedScreen = ({ navigation, embedded = false }) => {
   const route = useRoute();
-  const [tabNavigation, setTabNavigation] = useState(null);
 
   const [blogs, setBlogs] = useState([]);
 
@@ -479,9 +449,9 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
   const handleCreateBlog = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const session = await getBlogAuthSession();
 
-      if (!token) {
+      if (!session.isAuthenticated) {
         navigation.navigate('Login');
 
         return;
@@ -554,8 +524,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     setRefreshing(true);
     fetchBlogs();
   };
-
-  const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
@@ -798,72 +766,6 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
         />
       )}
 
-      <View style={styles.tabsWrapper}>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarIcon: ({ focused }) => {
-              let iconName;
-
-              switch (route.name) {
-                case 'Home':
-                  iconName = 'home';
-                  break;
-                case 'Request':
-                  iconName = 'envelope';
-                  break;
-                case 'Blog':
-                  iconName = 'newspaper-o';
-                  break;
-                case 'UserProfile':
-                  iconName = 'user';
-                  break;
-              }
-
-              const color = focused ? '#6a9689' : 'darkgray';
-              return <Icon name={iconName} color={color} size={30} />;
-            },
-            tabBarActiveTintColor: '#6a9689',
-            tabBarInactiveTintColor: 'darkgray',
-            tabBarStyle: [
-              {
-                height: 55 + insets.bottom,
-                paddingBottom: 10 + insets.bottom,
-                paddingTop: 5,
-              },
-            ],
-          })}
-        >
-          <Tab.Screen name="Home">
-            {props => (
-              <HomeScreenWrapper
-                {...props}
-                setTabNavigation={setTabNavigation}
-              />
-            )}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Request"
-            component={RequestScreen}
-            initialParams={{
-              selectedRequestId: null,
-              defaultTab: 'My Requests',
-            }}
-          />
-
-          <Tab.Screen name="UserProfile" component={UserDetailsScreen} />
-          {/* Salary screen kept but hidden from tab bar */}
-          <Tab.Screen
-            name="Salary"
-            component={MyPayslip}
-            options={{
-              headerShown: false,
-              tabBarItemStyle: { display: 'none' }, // ✅ IMPORTANT
-            }}
-          />
-        </Tab.Navigator>
-      </View>
     </View>
   );
 };
@@ -1194,9 +1096,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-  },
-  tabsWrapper: {
-    flex: 1,
-    minHeight: 0,
   },
 });

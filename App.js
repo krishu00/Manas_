@@ -42,13 +42,15 @@ const AppMain = () => {
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupTitle, setPopupTitle] = useState('');
   const [popupMessage, setPopupMessage] = useState('');
+  const [popupAutoCloseDelay, setPopupAutoCloseDelay] = useState(5000);
 
   const [fcmToken, setFcmToken] = useState('');
 
   // Show popup helper
-  const showPopup = useCallback((title, message) => {
+  const showPopup = useCallback((title, message, autoCloseDelay = 5000) => {
     setPopupTitle(title);
     setPopupMessage(message);
+    setPopupAutoCloseDelay(autoCloseDelay);
     setPopupVisible(true);
   }, []);
 
@@ -233,6 +235,36 @@ const AppMain = () => {
     };
   }, []);
 
+  const handleLogout = useCallback(async (showSuccessPopup = false) => {
+    try {
+      await clearEmployeeAccount();
+      setAccountType(null);
+      setIsAuthenticated(false);
+
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'PublicNavigator' }],
+        });
+      } else {
+        console.log('Navigation is not ready');
+      }
+
+      if (showSuccessPopup) {
+        showPopup(
+          'Logout Successful',
+          'You have been logged out successfully.',
+          2000,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error during logout:', error);
+      return false;
+    }
+  }, [showPopup]);
+
   // ======= Auto logout =======
   useEffect(() => {
     let timeout;
@@ -266,7 +298,7 @@ const AppMain = () => {
       setupAutoLogout();
     }
     return () => timeout && clearTimeout(timeout);
-  }, [isAuthenticated, showPopup, accountType]);
+  }, [isAuthenticated, showPopup, accountType, handleLogout]);
 
   // ======= Login & Logout handlers =======
   // const handleLoginSuccess = async token => {
@@ -329,37 +361,6 @@ const AppMain = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-
-      // await AsyncStorage.multiRemove([
-      //   'userToken',
-      //   'employee_id',
-      //   'employee_name',
-      //   'company_Code',
-      //   'loginTime',
-      // ]);
-      await clearEmployeeAccount();
-      setAccountType(null);
-
-      setIsAuthenticated(false);
-
-
-      if (navigationRef.current?.isReady()) {
-        navigationRef.current.reset({
-          index: 0,
-          routes: [{ name: 'PublicNavigator' }],
-        });
-
-      } else {
-        console.log('Navigation is not ready');
-      }
-
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-  };
-
   // ======= Render Loading =======
   const renderLoading = (color = '#0000ff') => (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -410,6 +411,7 @@ const AppMain = () => {
           title={popupTitle}
           message={popupMessage}
           onClose={() => setPopupVisible(false)}
+          autoCloseDelay={popupAutoCloseDelay}
         />
       )}
     </>

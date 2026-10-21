@@ -222,9 +222,11 @@ const Header = ({
 
 
       // Tell Dashboard/App that logout is complete
-      onLogoutSuccess?.();
+      const logoutSucceeded = await onLogoutSuccess?.(true);
 
-
+      if (logoutSucceeded === false) {
+        showPopup('Logout failed', 'Please try again.', true);
+      }
     } catch (error) {
       console.error('Logout error:', error);
 
