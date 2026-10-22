@@ -21,8 +21,9 @@ const AppHeader = () => {
   const [userName, setUserName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [logoutPopupVisible, setLogoutPopupVisible] = useState(false);
-
-  const [logoutType, setLogoutType] = useState(0);
+  const [logoutPopupTitle, setLogoutPopupTitle] = useState('Logout Successful');
+  const [logoutPopupMessage, setLogoutPopupMessage] = useState('');
+  const [selectedLogoutType, setSelectedLogoutType] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   // =====================================================
@@ -130,17 +131,15 @@ const AppHeader = () => {
   // LOGOUT
   // =====================================================
 
-  const handleLogout = async () => {
-    setLogoutType(0); // Set logoutType to 0 for  logout and 1 for Delete Account
-    setDeleteModalVisible(true); // Show the delete confirmation modal
+  const handleLogout = () => {
+    setDeleteModalVisible(true);
+  };
+
+  const confirmLogout = async (type) => {
     try {
       setDeleting(true);
-      try {
-        console.log("logout Api called");
-        await logoutApi(logoutType);
-      } catch (error) {
-        console.error('Logout API error:', error);
-      }
+      setSelectedLogoutType(type);
+      const response = await logoutApi(type);
 
       // ================================================
       // GUEST LOGOUT
@@ -178,13 +177,29 @@ const AppHeader = () => {
       setUserName('');
       setEmployeeId('');
 
+      setDeleteModalVisible(false);
+      setLogoutPopupTitle(
+        type === 2 ? 'Account Deletion Requested' : 'Logout Successful',
+      );
+      setLogoutPopupMessage(
+        typeof response?.data?.message === 'string' &&
+          response.data.message.trim()
+          ? response.data.message
+          : type === 2
+            ? 'Your account deletion request has been submitted.'
+            : 'You have been logged out successfully.',
+      );
       setLogoutPopupVisible(true);
 
-      console.log('Public Header logout completed');
     } catch (error) {
-      console.error('Logout error:', error);
-    }finally {
+      console.error('Logout API error:', error);
+      Alert.alert(
+        'Request failed',
+        'We could not complete your request. Please try again.',
+      );
+    } finally {
       setDeleting(false);
+      setSelectedLogoutType(null);
     }
   };
 
@@ -263,8 +278,8 @@ const AppHeader = () => {
       </View>
       {logoutPopupVisible && (
         <Popup
-          title="Logout Successful"
-          message="You have been logged out successfully."
+          title={logoutPopupTitle}
+          message={logoutPopupMessage}
           onClose={() => {
             setLogoutPopupVisible(false);
             navigation.reset({
@@ -292,12 +307,10 @@ const AppHeader = () => {
               <Text style={styles.warningIconText}>!</Text>
             </View>
 
-            <Text style={styles.modalTitle}>
-              Delete Your Account?
-            </Text>
+            <Text style={styles.modalTitle}>Choose an account action</Text>
 
             <Text style={styles.modalDescription}>
-              Are you sure you want to request account deletion?
+              Log out of your account or request permanent account deletion.
             </Text>
 
             <View style={styles.noticeBox}>
@@ -318,19 +331,29 @@ const AppHeader = () => {
             </View>
 
             <TouchableOpacity
+              style={[styles.logoutButton, deleting && styles.disabledButton]}
+              onPress={() => confirmLogout(1)}
+              disabled={deleting}
+            >
+              {deleting && selectedLogoutType === 1 ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.confirmDeleteText}>Logout</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[
                 styles.confirmDeleteButton,
                 deleting && styles.disabledButton,
               ]}
-              onPress={handleLogout}
+              onPress={() => confirmLogout(2)}
               disabled={deleting}
             >
-              {deleting ? (
+              {deleting && selectedLogoutType === 2 ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.confirmDeleteText}>
-                  Confirm Delete Account
-                </Text>
+                <Text style={styles.confirmDeleteText}>Delete My Account</Text>
               )}
             </TouchableOpacity>
 
@@ -476,6 +499,15 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 9,
     alignItems: 'center',
+  },
+
+  logoutButton: {
+    width: '100%',
+    backgroundColor: '#00503D',
+    padding: 14,
+    borderRadius: 9,
+    alignItems: 'center',
+    marginBottom: 8,
   },
 
   confirmDeleteText: {
