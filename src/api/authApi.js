@@ -11,12 +11,12 @@ export const login = async (email, password) => {
   return res.data; // expected: { token, employee }
 };
 
-export const logout = async () => {
+export const logout = async (logoutType) => {
   const token = await getAuthToken();
 
   return apiClient.post(
     '/logout',
-    {},
+    { logoutType },
     {
       withCredentials: true,
       headers: token
