@@ -34,7 +34,12 @@ import Popup from '../../Popup/Popup';
 
 import {
   getAuthToken,
+  getBlogAuthSession,
 } from '../../../src/utils/auth';
+import {
+  getCachedLikedBlogIds,
+  updateLikedBlogCache,
+} from '../../../src/utils/blogLikeState';
 
 import {
   getBlogById,
@@ -377,9 +382,27 @@ const insets = useSafeAreaInsets();
            * We DO NOT calculate the count here.
            */
 
-          setIsLiked(
-            !!blogData?.isLikedByMe,
-          );
+          const serverLikeState =
+            typeof blogData?.isLikedByMe === 'boolean'
+              ? blogData.isLikedByMe
+              : typeof blogData?.isLiked === 'boolean'
+                ? blogData.isLiked
+                : typeof blogData?.liked === 'boolean'
+                  ? blogData.liked
+                  : null;
+
+          if (serverLikeState !== null) {
+            setIsLiked(serverLikeState);
+          } else {
+            const authSession = await getBlogAuthSession();
+            const cachedLikedIds =
+              await getCachedLikedBlogIds(authSession);
+            setIsLiked(cachedLikedIds.has(String(blogId)));
+            console.log('🔐 Blog detail liked state:', {
+              accountType: authSession.accountType,
+              hasCachedLike: cachedLikedIds.has(String(blogId)),
+            });
+          }
 
 
           return blogData;
@@ -661,6 +684,7 @@ const insets = useSafeAreaInsets();
 
         const currentlyLiked =
           isLiked;
+        const authSession = await getBlogAuthSession();
 
 
         console.log(
@@ -745,6 +769,12 @@ const insets = useSafeAreaInsets();
           return;
 
         }
+
+        await updateLikedBlogCache(
+          authSession,
+          blogId,
+          !currentlyLiked,
+        );
 
 
         // =============================================
@@ -1143,10 +1173,14 @@ const insets = useSafeAreaInsets();
 
 
   const authorName =
-    blog?.author?.name ||
+    blog?.guestAuthor?.name ||
     blog?.author?.employee_details?.name ||
+    blog?.author?.name ||
+    route?.params?.authorName ||
     blog?.authorName ||
-    'Manas User';
+    (blog?.authorType === 'guest' || route?.params?.authorType === 'guest'
+      ? 'Guest User'
+      : 'Employee User');
 
 
   /*

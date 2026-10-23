@@ -18,7 +18,6 @@ import {
   InputAccessoryView,
 } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_URL } from '@env';
 import {
@@ -34,7 +33,11 @@ import {
   likeBlog,
   unlikeBlog,
 } from '../../../src/api/blogApi';
-import { getBlogAuthSession } from '../../../src/utils/auth';
+import { getAuthToken, getBlogAuthSession } from '../../../src/utils/auth';
+import {
+  getCachedLikedBlogIds,
+  updateLikedBlogCache,
+} from '../../../src/utils/blogLikeState';
 
 import { getCommentAuthorName } from './CommentItem';
 
@@ -42,7 +45,7 @@ import BlogCard from '../../blog/BlogCard';
 
 const getAllBlogs = async () => {
   try {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await getAuthToken();
 
     const headers = {
       'Content-Type': 'application/json',
@@ -226,6 +229,15 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
       navigation.navigate('BlogDetail', {
         blogId: String(blogId),
+        authorName:
+          blog?.authorType === 'guest'
+            ? blog?.guestAuthor?.name ||
+              blog?.author?.name ||
+              blog?.authorName
+            : blog?.author?.employee_details?.name ||
+              blog?.author?.name ||
+              blog?.authorName,
+        authorType: blog?.authorType,
       });
     },
     [navigation, showPopup],
@@ -252,13 +264,23 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       }
 
       try {
-        const token = await AsyncStorage.getItem('userToken');
+        const authSession = await getBlogAuthSession();
+        const token = authSession.token;
+        const likedAfterRequest = !currentlyLiked;
+
+        console.log('🔐 Blog like auth state:', {
+          accountType: authSession.accountType,
+          hasToken: Boolean(token),
+        });
 
         if (!token) {
+          console.log('🔐 Redirecting to Login: no blog action session.');
           navigation.navigate('Login');
 
           return;
         }
+
+        console.log('🌐 Blog like request:', `${API_URL}/blog/${blogId}/like`);
 
         const response = currentlyLiked
           ? await unlikeBlog(blogId)
@@ -267,8 +289,26 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
         console.log('❤️ Like API response:', JSON.stringify(response, null, 2));
 
         if (response?.success === false) {
+          const alreadyLiked =
+            !currentlyLiked && /already liked/i.test(response?.message || '');
+
+          if (alreadyLiked) {
+            await updateLikedBlogCache(authSession, blogId, true);
+            setBlogs(previousBlogs =>
+              previousBlogs.map(item =>
+                String(getBlogId(item)) === String(blogId)
+                  ? { ...item, isLikedByMe: true }
+                  : item,
+              ),
+            );
+          }
+
           showPopup(
-            currentlyLiked ? 'Unable to Unlike' : 'Unable to Like',
+            alreadyLiked
+              ? 'Already Liked'
+              : currentlyLiked
+                ? 'Unable to Unlike'
+                : 'Unable to Like',
             response?.message || 'Unable to update like.',
           );
 
@@ -289,6 +329,8 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
             ? Math.max(0, currentCount - 1)
             : currentCount + 1;
 
+        await updateLikedBlogCache(authSession, blogId, likedAfterRequest);
+
         setBlogs(previousBlogs =>
           previousBlogs.map(item => {
             const itemId = getBlogId(item);
@@ -305,17 +347,49 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
           }),
         );
       } catch (error) {
+        const alreadyLiked =
+          !currentlyLiked &&
+          /already liked/i.test(error?.response?.data?.message || '');
+
         console.log(
           '❌ Like API Error:',
+          {
+            status: error?.response?.status,
+            url: `${API_URL}/blog/${blogId}/${currentlyLiked ? 'unlike' : 'like'}`,
+          },
           error?.response?.data || error?.message || error,
         );
 
-        if (error?.response?.status === 401) {
-          await AsyncStorage.removeItem('userToken');
-
+        if (alreadyLiked) {
+          const authSession = await getBlogAuthSession();
+          await updateLikedBlogCache(authSession, blogId, true);
+          setBlogs(previousBlogs =>
+            previousBlogs.map(item =>
+              String(getBlogId(item)) === String(blogId)
+                ? { ...item, isLikedByMe: true }
+                : item,
+            ),
+          );
           showPopup(
-            'Login Required',
-            'Your session has expired. Please login again.',
+            'Already Liked',
+            error.response.data.message,
+          );
+
+          return;
+        }
+
+        if (
+          error?.response?.status === 401 ||
+          error?.response?.status === 403
+        ) {
+          showPopup(
+            error.response.status === 401
+              ? 'Authentication Required'
+              : 'Action Not Allowed',
+            error?.response?.data?.message ||
+              (error.response.status === 401
+                ? 'Your session could not be verified. Please sign in again if the problem continues.'
+                : 'Your account is not permitted to like this blog.'),
           );
 
           return;
@@ -332,9 +406,16 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
 
   const handleSubmitComment = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const authSession = await getBlogAuthSession();
+      const token = authSession.token;
+
+      console.log('🔐 Blog comment auth state:', {
+        accountType: authSession.accountType,
+        hasToken: Boolean(token),
+      });
 
       if (!token) {
+        console.log('🔐 Redirecting to Login: no blog action session.');
         closeCommentModal();
 
         navigation.navigate('Login');
@@ -361,6 +442,10 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       console.log('💬 Posting comment');
 
       console.log('💬 Blog ID:', selectedBlogId);
+      console.log(
+        '🌐 Blog comment request:',
+        `${API_URL}/blog/${selectedBlogId}/comment`,
+      );
 
       const response = await axios.post(
         `${API_URL}/blog/${selectedBlogId}/comment`,
@@ -421,17 +506,27 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
     } catch (error) {
       console.log(
         '❌ Comment API Error:',
+        {
+          status: error?.response?.status,
+          url: `${API_URL}/blog/${selectedBlogId}/comment`,
+        },
         error?.response?.data || error?.message || error,
       );
 
-      if (error?.response?.status === 401) {
-        await AsyncStorage.removeItem('userToken');
-
+      if (
+        error?.response?.status === 401 ||
+        error?.response?.status === 403
+      ) {
         closeCommentModal();
 
         showPopup(
-          'Login Required',
-          'Your session has expired. Please login again.',
+          error.response.status === 401
+            ? 'Authentication Required'
+            : 'Action Not Allowed',
+          error?.response?.data?.message ||
+            (error.response.status === 401
+              ? 'Your session could not be verified. Please sign in again if the problem continues.'
+              : 'Your account is not permitted to comment on this blog.'),
         );
 
         return;
@@ -470,6 +565,8 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       setError(null);
 
       const response = await getAllBlogs();
+      const authSession = await getBlogAuthSession();
+      const cachedLikedIds = await getCachedLikedBlogIds(authSession);
 
       let blogList = [];
 
@@ -481,13 +578,22 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
         blogList = response;
       }
 
-      const normalizedBlogs = blogList.map(blog => ({
-        ...blog,
+      const normalizedBlogs = blogList.map(blog => {
+        const serverLikeState =
+          typeof blog?.isLikedByMe === 'boolean'
+            ? blog.isLikedByMe
+            : typeof blog?.isLiked === 'boolean'
+              ? blog.isLiked
+              : typeof blog?.liked === 'boolean'
+                ? blog.liked
+                : null;
 
-        isLikedByMe: Boolean(
-          blog?.isLikedByMe ?? blog?.isLiked ?? blog?.liked ?? false,
-        ),
-      }));
+        return {
+          ...blog,
+          isLikedByMe:
+            serverLikeState ?? cachedLikedIds.has(String(getBlogId(blog))),
+        };
+      });
 
       setBlogs(normalizedBlogs);
     } catch (error) {
@@ -506,7 +612,7 @@ const BlogFeedScreen = ({ navigation, embedded = false }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [getBlogId]);
 
   useEffect(() => {
     fetchBlogs();

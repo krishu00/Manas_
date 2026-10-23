@@ -9,18 +9,41 @@ import {
 
 export const getCommentAuthorName = comment => {
   if (!comment) {
-    return 'Manas User';
+    return 'User';
   }
 
-  return (
-    comment?.employee?.employee_details?.name ||
-    comment?.employee?.name ||
-    comment?.author?.name ||
-    comment?.author?.employee_details?.name ||
-    comment?.authorName ||
-    comment?.employeeName ||
-    'Manas User'
-  );
+  const authorName = [
+    comment?.guestAuthor?.name,
+    comment?.guest?.name,
+    comment?.guest_details?.name,
+    comment?.user?.name,
+    comment?.employee?.employee_details?.name,
+    comment?.employee?.name,
+    comment?.employee_details?.name,
+    comment?.author?.name,
+    comment?.author?.guestAuthor?.name,
+    comment?.author?.guest?.name,
+    comment?.author?.guest_details?.name,
+    comment?.author?.employee_details?.name,
+    comment?.author?.user?.name,
+    comment?.author,
+    comment?.authorName,
+    comment?.guestName,
+    comment?.userName,
+    comment?.employeeName,
+    comment?.createdBy?.name,
+    comment?.name,
+  ].find(name => typeof name === 'string' && name.trim());
+
+  if (authorName) {
+    return authorName.trim();
+  }
+
+  return comment?.authorType === 'guest' ||
+    comment?.accountType === 'guest' ||
+    comment?.userType === 'guest'
+    ? 'Guest User'
+    : 'Employee User';
 };
 
 const CommentItem = ({
@@ -136,20 +159,8 @@ const CommentItem = ({
         </Text>
 
 
-        {/* FOOTER */}
-
-        <View
-          style={styles.footer}
-        >
-
-          <Text
-            style={styles.replyText}
-          >
-            Reply
-          </Text>
-
-
-          {onDelete ? (
+        {onDelete ? (
+          <View style={styles.footer}>
 
             <TouchableOpacity
               onPress={
@@ -170,32 +181,13 @@ const CommentItem = ({
               >
                 Delete
               </Text>
-
             </TouchableOpacity>
 
-          ) : null}
-
-        </View>
+          </View>
+        ) : null}
 
       </View>
 
-
-      {/* ================================================= */}
-      {/* HEART */}
-      {/* ================================================= */}
-
-      <TouchableOpacity
-        style={styles.heartButton}
-        activeOpacity={0.7}
-      >
-
-        <Text
-          style={styles.heart}
-        >
-          ♡
-        </Text>
-
-      </TouchableOpacity>
 
     </View>
   );
@@ -327,14 +319,6 @@ const styles =
     },
 
 
-    replyText: {
-      color: '#52656A',
-
-      fontSize: 13,
-
-      fontWeight: '700',
-    },
-
     deleteText: {
       color: '#D85C5C',
 
@@ -343,32 +327,6 @@ const styles =
       fontWeight: '700',
 
       marginLeft: 18,
-    },
-
-    // =================================================
-    // HEART
-    // =================================================
-
-    heartButton: {
-      width:
-        35,
-
-      height:
-        40,
-
-      alignItems:
-        'center',
-
-      justifyContent:
-        'center',
-    },
-
-    heart: {
-      fontSize: 27,
-
-      color: '#718087',
-
-      fontWeight: '400',
     },
 
   });
