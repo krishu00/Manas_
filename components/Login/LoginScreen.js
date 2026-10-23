@@ -340,7 +340,8 @@ const LoginScreen = ({ navigation, onLoginSuccess, fcmToken }) => {
       if (response?.data?.success) {
         showPopup(
           'Success',
-          'Password reset link has been sent to your email.',
+          response.data.message ||
+            'Password reset link has been sent to your email.',
         );
       } else {
         showPopup(
