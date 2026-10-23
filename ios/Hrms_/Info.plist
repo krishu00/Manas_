@@ -34,11 +34,15 @@
 		<true/>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Manas uses your health data to display your daily steps, walking distance, and activity.</string>
+	<string>Manas HRMS uses your health data to display your daily steps, walking distance, and activity.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Manas may use Health data to support your activity features.</string>
+	<string>Manas HRMS may use Health data to support your activity features.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Manas HRMS uses your location to provide location information for blog posts when you use these features.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Manas uses your location when you upload a blog post to provide location information with your workplace post.</string>
+	<string>Manas HRMS uses your location when you upload a blog post to provide location information with your workplace post.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Manas HRMS needs access to your photo library so you can select and upload images when creating and sharing blog posts.</string>
 	<key>RCTNewArchEnabled</key>
 	<false/>
 	<key>UIAppFonts</key>
